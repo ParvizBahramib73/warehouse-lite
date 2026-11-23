@@ -31,7 +31,23 @@ export function validateSnapshot(snapshot) {
     for(const line of row.lines)if(!products.has(line.productId)||!Number.isSafeInteger(line.amount)||line.amount<0)throw new Error('قلم فاکتور نامعتبر است.');
   }
   for(const row of snapshot.payments)if(!customers.has(row.customerId)||!Number.isSafeInteger(row.amount)||row.amount<0)throw new Error('دریافت وجه نامعتبر است.');
-  for(const row of rowsFor('visits'))if(!customers.has(row.customerId)||!/^\d{4}-\d{2}-\d{2}$/.test(row.plannedDate)||!['planned','purchased','no_purchase','unavailable','follow_up'].includes(row.outcome)||String(row.note||'').length>500)throw new Error('سابقه مراجعه نامعتبر است.');
+  const validDate=value=>{
+    if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(String(value||'')))return false;
+    const [year,month,day]=value.split('-').map(Number),date=new Date(Date.UTC(year,month-1,day));
+    return date.getUTCFullYear()===year&&date.getUTCMonth()===month-1&&date.getUTCDate()===day;
+  };
+  const visitKeys=new Set();
+  for(const row of rowsFor('visits')){
+    const key=row.customerId+'|'+row.plannedDate;
+    if(!customers.has(row.customerId)||!validDate(row.plannedDate)||!['planned','purchased','small_purchase','no_purchase','unavailable','follow_up','rescheduled','not_needed','declined','other','cancelled'].includes(row.outcome)||String(row.note||'').length>500)throw new Error('سابقه مراجعه نامعتبر است.');
+    if(visitKeys.has(key))throw new Error('برای یک مشتری در یک روز، سابقه مراجعه تکراری وجود دارد.');
+    visitKeys.add(key);
+    if(row.routeName!==undefined&&(typeof row.routeName!=='string'||row.routeName.length>80))throw new Error('نام مسیر در فایل پشتیبان نامعتبر است.');
+    if(row.routeOrder!==undefined&&(!Number.isSafeInteger(row.routeOrder)||row.routeOrder<1))throw new Error('ترتیب مسیر در فایل پشتیبان نامعتبر است.');
+    if(row.nextFollowUpDate&&!validDate(row.nextFollowUpDate))throw new Error('تاریخ پیگیری در فایل پشتیبان نامعتبر است.');
+    if(['follow_up','rescheduled'].includes(row.outcome)&&(!validDate(row.nextFollowUpDate)||row.nextFollowUpDate<row.plannedDate))throw new Error('تاریخ پیگیری در فایل پشتیبان نامعتبر است.');
+    if(row.outcome==='other'&&!String(row.note||'').trim())throw new Error('توضیح وضعیت مراجعه در فایل پشتیبان ثبت نشده است.');
+  }
   for(const sale of snapshot.sales)for(const line of sale.lines)if(line.costAmount!==undefined&&line.costAmount!==null&&(!Number.isSafeInteger(line.costAmount)||line.costAmount<0))throw new Error('بهای تمام‌شده فاکتور نامعتبر است.');
   return Object.fromEntries(TABLES.map(t=>[t,rowsFor(t).length]));
 }
