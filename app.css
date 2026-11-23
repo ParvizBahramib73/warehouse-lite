@@ -384,3 +384,16 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
  .route-add-heading-actions{align-items:stretch;flex-direction:column}
  .route-add-heading-actions .btn{width:100%;min-height:40px}
 }
+
+.route-breakdown{padding:17px 19px}
+.route-breakdown .card-header{margin-bottom:12px}
+.route-breakdown-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.route-breakdown-item{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 11px;border:1px solid #e8efeb;border-radius:11px;background:#fbfdfc;font-size:.72rem}
+.route-breakdown-item span{color:#60736b;line-height:1.5}
+.route-breakdown-item strong{flex:0 0 auto;color:#176e5b;font-size:.9rem;font-variant-numeric:tabular-nums}
+@media(max-width:1180px){.route-breakdown-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:760px){
+ .route-breakdown{padding:14px 12px}
+ .route-breakdown-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+ .route-breakdown-item{padding:9px 8px;font-size:.67rem}
+}
