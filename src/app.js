@@ -61,7 +61,8 @@ function dashboard(){
   const balance=data.customers.reduce((a,c)=>a+Math.max(0,customerBalance(c.id,data.sales,data.payments)),0);
   const low=data.products.filter(p=>isActive(p)&&p.stockBase<=p.lowBase);
   const latest=[...data.sales].sort((a,b)=>b.createdAt.localeCompare(a.createdAt)).slice(0,5);
-  const followups=getCustomerFollowups(data.customers,data.sales,data.payments).slice(0,6);
+  const allFollowups=getCustomerFollowups(data.customers,data.sales,data.payments);
+  const followups=allFollowups.slice(0,6);
   return `<section class="welcome-card" aria-label="خوش‌آمدگویی">
     <div class="welcome-content">
       <span class="welcome-kicker">WAREHOUSE LITE · انبار من</span>
@@ -80,7 +81,7 @@ function dashboard(){
   ${latest.length?`<div class="table-wrap"><table class="data-table"><thead><tr><th>مشتری</th><th>مبلغ</th><th>زمان</th><th>فاکتور</th></tr></thead><tbody>${latest.map(s=>`<tr><td class="name-cell"><strong>${esc(s.customerName)}</strong><small>${esc(s.invoiceNo)}</small></td><td>${money(s.total)}</td><td>${dateFa(s.createdAt)}</td><td><div class="record-actions"><button class="btn outline sm" data-invoice="${esc(s.id)}">چاپ / PDF</button><button class="btn sm primary" data-share-invoice="${esc(s.id)}">ارسال فاکتور</button></div></td></tr>`).join('')}</tbody></table></div>`:empty('🧾','هنوز فاکتوری صادر نشده است.','برای شروع، کالا و مشتری تعریف کنید.')}</section>
   <section class="card"><div class="card-header"><h2>کالاهای نیازمند تأمین</h2><span class="tag ${low.length?'low':'good'}">${low.length} مورد</span></div>
   ${low.length?`<div class="list">${low.slice(0,7).map(p=>`<div class="list-row"><div class="item-avatar">📦</div><div class="grow"><strong>${esc(p.name)}</strong><small>حد هشدار: ${stockLabel(p,p.lowBase)}</small></div><span class="tag low">${stockLabel(p)}</span></div>`).join('')}</div>`:empty('✓','همه‌چیز مرتب است.','در حال حاضر کالای کم‌موجود ندارید.')}</section></div>
-  <section class="card followup-panel"><div class="card-header"><div><h2>مشتریان نیازمند پیگیری</h2><p class="small muted">بر اساس آخرین فاکتور و مانده حساب ثبت‌شده</p></div><span class="tag ${followups.length?'low':'good'}">${followups.length} مورد</span></div>
+  <section class="card followup-panel"><div class="card-header"><div><h2>مشتریان نیازمند پیگیری</h2><p class="small muted">بر اساس آخرین فاکتور و مانده حساب ثبت‌شده</p></div><span class="tag ${allFollowups.length?'low':'good'}">${allFollowups.length} مورد</span></div>
   ${followups.length?`<div class="list followup-list">${followups.map(c=>`<div class="list-row followup-row"><div class="item-avatar">🧭</div><div class="grow"><strong>${esc(c.name)}</strong><small>${esc(c.reason)} · ${c.daysSinceSale===null?'بدون فاکتور ثبت‌شده':c.daysSinceSale===0?'خرید امروز':`${new Intl.NumberFormat('fa-IR').format(c.daysSinceSale)} روز از آخرین خرید`}</small><small>${esc(c.district||'همدان')} ${c.lastSale?'· '+dateFa(c.lastSale.createdAt):''}</small></div><div class="followup-side">${c.balance>0?`<strong class="number debt">${money(c.balance)}</strong><small>مانده حساب</small>`: '<span class="tag good">پیگیری رضایت</span>'}<button class="btn sm soft" data-customer-statement="${esc(c.id)}">گردش حساب</button></div></div>`).join('')}</div>`:empty('✓','فعلاً موردی برای پیگیری نیست','با ثبت خریدهای جدید، پیشنهادهای پیگیری اینجا نمایش داده می‌شوند.')}</section>
   ${!data.products.length?`<div class="inline-note warning">برای شروع می‌توانید چند کالای واقعی ثبت کنید، یا فقط برای آزمایش رابط، <button class="btn sm soft" data-action="demo">داده‌های نمونه ایجاد کنید</button>. داده نمونه را با اطلاعات واقعی مخلوط نکنید.</div>`:''}`;
 }
