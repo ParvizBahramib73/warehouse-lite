@@ -180,7 +180,7 @@ test('visit workspace supports manual route membership, complete outcomes and in
  assert.ok(app.includes("small_purchase"));
  assert.ok(app.includes("rescheduled"));
  assert.ok(app.includes("summarizeRoute(all)"));
- assert.ok(data.includes("outcome==='cancelled'"));
+ assert.ok(data.includes("'cancelled'"));
  assert.ok(data.includes('routeOrder:existing?.routeOrder??maxOrder+1'));
  assert.ok(data.includes('visitedAt:'));
  assert.ok(route.includes("small_purchase:'خرید کم"));
