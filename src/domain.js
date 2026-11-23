@@ -67,8 +67,8 @@ export function defaultUnitPrice(product, unit) {
 }
 
 export function customerBalance(customerId, sales, payments) {
-  const salesSum = sales.filter(x => x.customerId === customerId).reduce((sum, x) => sum + x.total, 0);
-  const paymentsSum = payments.filter(x => x.customerId === customerId).reduce((sum, x) => sum + x.amount, 0);
+  const salesSum = sales.filter(x => x.customerId === customerId && x.status !== 'void').reduce((sum, x) => sum + x.total, 0);
+  const paymentsSum = payments.filter(x => x.customerId === customerId && x.status !== 'void').reduce((sum, x) => sum + x.amount, 0);
   return salesSum - paymentsSum;
 }
 
