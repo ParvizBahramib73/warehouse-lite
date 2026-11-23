@@ -356,7 +356,7 @@ function visitsPage(){
  const start=(visitState.page-1)*PAGE_SIZE,rows=filtered.slice(start,start+PAGE_SIZE),groups=groupRoutePlan(rows);
  const summary=summarizeRoute(all);
  const lastVisits=new Map();
- [...data.visits].filter(visit=>visit.plannedDate<visitState.date&&visit.outcome!=='cancelled')
+ [...data.visits].filter(visit=>visit.plannedDate<visitState.date&&!['cancelled','planned'].includes(visit.outcome))
   .sort((a,b)=>b.plannedDate.localeCompare(a.plannedDate)||String(b.visitedAt||b.modifiedAt||'').localeCompare(String(a.visitedAt||a.modifiedAt||'')))
   .forEach(visit=>{if(!lastVisits.has(visit.customerId))lastVisits.set(visit.customerId,visit);});
  const pageControl=`<div class="pagination"><span>نمایش ${filtered.length?start+1:0} تا ${Math.min(start+PAGE_SIZE,filtered.length)} از ${filtered.length}</span>${pages>1?`<div class="pagination-actions"><button class="btn sm outline" type="button" data-visit-page="prev" ${start===0?'disabled':''}>قبلی</button><span>صفحه ${visitState.page} از ${pages}</span><button class="btn sm outline" type="button" data-visit-page="next" ${visitState.page>=pages?'disabled':''}>بعدی</button></div>`:''}</div>`;
