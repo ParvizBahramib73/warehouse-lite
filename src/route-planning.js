@@ -58,7 +58,7 @@ export function buildRoutePlan(customers=[],visits=[],date=''){
  }
  return rows.sort((a,b)=>
   String(a.routeName||'').localeCompare(String(b.routeName||''),'fa')||
-  (a.routeOrder??0)-(b.routeOrder??0)||
+  (a.routeOrder??Number.MAX_SAFE_INTEGER)-(b.routeOrder??Number.MAX_SAFE_INTEGER)||
   (a.district||'بدون محله').localeCompare(b.district||'بدون محله','fa')||
   a.name.localeCompare(b.name,'fa')
  );
