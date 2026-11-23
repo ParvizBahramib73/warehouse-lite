@@ -243,8 +243,9 @@ export async function updatePayment(db,id,{amount,method,note}) {
     const payment=await request(tx.objectStore('payments').get(id));
     if(!payment||payment.status==='void')throw new Error('دریافت پیدا نشد یا باطل شده است.');
     if(payment.saleId){
-      const sale=await request(tx.objectStore('sales').get(payment.saleId));
-      if(!sale||sale.status==='void'||value>sale.total)throw new Error('مبلغ دریافت با فاکتور مرتبط سازگار نیست.');
+      const [sale,allPayments]=await Promise.all([request(tx.objectStore('sales').get(payment.saleId)),request(tx.objectStore('payments').getAll())]);
+      const otherLinked=allPayments.filter(p=>p.saleId===payment.saleId&&p.id!==id&&p.status!=='void').reduce((sum,p)=>sum+p.amount,0);
+      if(!sale||sale.status==='void'||otherLinked+value>sale.total)throw new Error('مجموع دریافت‌های مرتبط با فاکتور نمی‌تواند از مبلغ فاکتور بیشتر باشد.');
     }
     tx.objectStore('payments').put({...payment,amount:value,method,note:String(note||'').slice(0,250),modifiedAt:isoNow()});
     await done;
