@@ -413,6 +413,7 @@ function visitsPage(){
    <div class="stat"><span class="stat-label">پیگیری بعدی</span><strong class="stat-value route-warn">${summary.needsFollowUp}</strong></div>
    <div class="stat"><span class="stat-label">هنوز مراجعه نشده</span><strong class="stat-value">${summary.planned}</strong></div>
   </div>
+  <section class="card route-breakdown"><div class="card-header"><div><h2>تفکیک نتیجه‌های امروز</h2><p class="small muted">خلاصه همه وضعیت‌هایی که برای مشتریان ثبت شده‌اند.</p></div></div><div class="route-breakdown-grid">${Object.entries(VISIT_OUTCOMES).filter(([value])=>value!=='cancelled').map(([value,label])=>`<div class="route-breakdown-item"><span>${esc(label)}</span><strong>${summary[value]||0}</strong></div>`).join('')}</div></section>
   <section class="card route-results-card"><div class="card-header"><div><h2>گزارش مراجعات و توقف‌ها</h2><p class="small muted">وضعیت هر مشتری را همان‌جا ثبت کن؛ سوابق برای تاریخ‌های بعد هم حفظ می‌شوند.</p></div><span class="tag">${filtered.length} نتیجه</span></div>
    ${filtered.length?cards:empty('🧭','مشتری‌ای در این برنامه نیست','از فرم افزودن مشتری استفاده کن یا فیلترها و روز ویزیت هفتگی مشتریان را بررسی کن.')}
    ${filtered.length?pageControl:''}
