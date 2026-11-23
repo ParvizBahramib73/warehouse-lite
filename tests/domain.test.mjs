@@ -59,3 +59,23 @@ test('customer balance ignores voided invoices and voided receipts',()=>{
  ];
  assert.equal(customerBalance('c1',sales,payments),85000);
 });
+
+test('backup stock reconciliation accepts edit and void reversal movements',()=>{
+ const product={id:'p1',name:'بادکا',kind:'gram',packBase:0,stockBase:0,lowBase:0,salePrice:100};
+ const snapshot={
+  schemaVersion:1,products:[product],suppliers:[{id:'s1',name:'تأمین‌کننده'}],customers:[{id:'c1',name:'مشتری'}],
+  purchases:[{id:'buy1',productId:'p1',supplierId:'s1',total:1000,status:'void'}],
+  sales:[{id:'sale1',customerId:'c1',lines:[{productId:'p1',amount:400}],total:400,status:'void'}],
+  payments:[],
+  movements:[
+   {id:'m1',productId:'p1',deltaBase:10000},
+   {id:'m2',productId:'p1',deltaBase:-3000},
+   {id:'m3',productId:'p1',deltaBase:3000},
+   {id:'m4',productId:'p1',deltaBase:-4000},
+   {id:'m5',productId:'p1',deltaBase:4000},
+   {id:'m6',productId:'p1',deltaBase:2000},
+   {id:'m7',productId:'p1',deltaBase:-12000}
+  ]
+ };
+ assert.ok(validateSnapshot(snapshot));
+});
