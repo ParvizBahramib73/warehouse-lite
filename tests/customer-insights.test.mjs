@@ -33,8 +33,10 @@ test('follow-up suggestions use latest active sale and outstanding balance, excl
   {id:'c3',name:'غیرفعال',active:false}
  ];
  const items=getCustomerFollowups(customers,sales,payments,Date.parse('2026-11-23T10:00:00.000Z'));
- assert.deepEqual(items.map(x=>x.id),['c1','c3'].filter(id=>id!=='c3'));
- assert.equal(items[0].daysSinceSale,18);
+ assert.deepEqual(items.map(x=>x.id),['c1','c2']);
+ assert.equal(items[0].daysSinceSale,22);
  assert.equal(items[0].balance,100);
  assert.equal(items[0].reason,'پیگیری خرید و مانده حساب');
+ assert.equal(items[1].balance,40);
+ assert.equal(items[1].reason,'پیگیری مانده حساب');
 });
