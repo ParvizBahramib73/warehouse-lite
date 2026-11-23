@@ -306,6 +306,86 @@ function closeEditor(){
  render();if(page==='sales')updateSaleTotal($('#sale-form'));
 }
 
+
+function visitsPage(){
+ const all=buildRoutePlan(data.customers,data.visits,visitState.date);
+ const districts=[...new Set(all.map(row=>row.district||'بدون محله'))].sort((a,b)=>a.localeCompare(b,'fa'));
+ const q=visitState.query.trim().toLocaleLowerCase('fa');
+ let filtered=all.filter(row=>!q||[row.name,row.phone,row.district].filter(Boolean).join(' ').toLocaleLowerCase('fa').includes(q));
+ if(visitState.district!=='all')filtered=filtered.filter(row=>(row.district||'بدون محله')===visitState.district);
+ if(visitState.status!=='all')filtered=filtered.filter(row=>row.outcome===visitState.status);
+ const pages=Math.max(1,Math.ceil(filtered.length/PAGE_SIZE));visitState.page=Math.min(Math.max(1,visitState.page),pages);
+ const start=(visitState.page-1)*PAGE_SIZE,rows=filtered.slice(start,start+PAGE_SIZE),groups=groupRoutePlan(rows);
+ const count=outcome=>all.filter(row=>row.outcome===outcome).length;
+ const pageControl=`<div class="pagination"><span>نمایش ${filtered.length?start+1:0} تا ${Math.min(start+PAGE_SIZE,filtered.length)} از ${filtered.length}</span>${pages>1?`<div class="pagination-actions"><button class="btn sm outline" type="button" data-visit-page="prev" ${start===0?'disabled':''}>قبلی</button><span>صفحه ${visitState.page} از ${pages}</span><button class="btn sm outline" type="button" data-visit-page="next" ${visitState.page>=pages?'disabled':''}>بعدی</button></div>`:''}</div>`;
+ const cards=groups.map(group=>`<section class="route-group"><header><h3>${esc(group.district)}</h3><span class="tag">${group.customers.length} مشتری</span></header><div class="route-cards">${group.customers.map(customer=>{
+  const key=visitDraftKey(customer.id,visitState.date),draft=visitDrafts.get(key)||{};
+  const outcome=draft.outcome||customer.outcome||'planned',note=draft.note??customer.note??'',nextDate=draft.nextFollowUpDate??customer.nextFollowUpDate??'';
+  return `<article class="route-customer-card"><div class="route-customer-top"><div class="item-avatar">👤</div><div class="grow"><strong>${esc(customer.name)}</strong><small>${esc(customer.district||'بدون محله')} ${customer.phone?'· '+esc(customer.phone):'· بدون شماره تماس'}</small>${customer.isFollowUp?'<span class="tag low">پیگیری زمان‌بندی‌شده</span>':''}${customer.visit?.outcome&&customer.visit.outcome!=='planned'?'<span class="tag good">نتیجه قبلی همین روز ثبت شده</span>':''}</div>${customer.phone?`<a class="btn sm outline" href="tel:${esc(customer.phone)}">تماس</a>`:''}</div>
+  ${customer.isFollowUp&&customer.followUpNote?`<p class="route-previous-note">یادداشت پیگیری قبلی: ${esc(customer.followUpNote)}</p>`:''}
+  <form data-form="visit" data-visit-form>
+   <input type="hidden" name="customerId" value="${esc(customer.id)}"/><input type="hidden" name="plannedDate" value="${esc(visitState.date)}"/>
+   <div class="field"><label>نتیجه مراجعه</label><select name="outcome" data-visit-outcome>${Object.entries(VISIT_OUTCOMES).map(([value,label])=>opt(value,label,outcome)).join('')}</select></div>
+   ${outcome==='follow_up'?`<div class="field"><label>تاریخ پیگیری بعدی *</label><input type="date" name="nextFollowUpDate" value="${esc(nextDate)}" min="${esc(visitState.date)}" required/></div>`:''}
+   <div class="field"><label>یادداشت کوتاه (اختیاری)</label><textarea name="note" rows="2" maxlength="500" placeholder="مثلاً روغن نیاز داشت؛ فردا تماس بگیر…">${esc(note)}</textarea></div>
+   <button class="btn primary full" type="submit">ذخیره نتیجه مراجعه</button>
+  </form>
+  </article>`;
+ }).join('')}</div></section>`).join('');
+ const weekdayName=weekdayForRoute(visitState.date);
+ return `<div class="route-page">
+  <section class="card route-toolbar-card"><div class="route-toolbar-heading"><div><h2>برنامه مسیر ویزیت</h2><p class="small muted">مشتریان بر اساس روز مراجعه و محله گروه‌بندی شده‌اند.</p></div><button class="btn sm outline" type="button" data-visit-today>امروز</button></div>
+   <div class="route-filters"><div class="field"><label>تاریخ مسیر</label><input type="date" data-visit-date value="${esc(visitState.date)}"/></div><div class="field route-search-field"><label>جستجوی مشتری</label><input type="search" data-visit-search value="${esc(visitState.query)}" placeholder="نام، تلفن یا محله…"/></div><div class="field"><label>محله</label><select data-visit-district><option value="all">همه محله‌ها</option>${districts.map(d=>opt(d,d,visitState.district)).join('')}</select></div><div class="field"><label>وضعیت مراجعه</label><select data-visit-status><option value="all">همه وضعیت‌ها</option>${Object.entries(VISIT_OUTCOMES).map(([value,label])=>opt(value,label,visitState.status)).join('')}</select></div></div>
+   <div class="route-day-caption"><strong>${weekdayName?weekdayName+' · ':''}${dateFa(visitState.date)}</strong><span>${all.length} مشتری در برنامه این روز</span></div>
+  </section>
+  <div class="grid route-stats">
+   <div class="stat"><span class="stat-label">کل برنامه</span><strong class="stat-value">${all.length} مشتری</strong></div>
+   <div class="stat"><span class="stat-label">خرید انجام شد</span><strong class="stat-value route-good">${count('purchased')}</strong></div>
+   <div class="stat"><span class="stat-label">خرید انجام نشد</span><strong class="stat-value">${count('no_purchase')}</strong></div>
+   <div class="stat"><span class="stat-label">در انتظار / پیگیری</span><strong class="stat-value route-warn">${count('planned')+count('follow_up')+count('unavailable')}</strong></div>
+  </div>
+  <section class="card route-results-card"><div class="card-header"><div><h2>ترتیب مراجعه بر اساس محله</h2><p class="small muted">برای افزودن مشتری به روز دیگری، روز ویزیت او را در بخش مشتریان تنظیم کنید.</p></div><span class="tag">${filtered.length} نتیجه</span></div>
+   ${filtered.length?cards:empty('🧭','مشتری‌ای در این برنامه نیست','روز ویزیت مشتریان را در بخش مشتریان تعیین کنید یا فیلترها را تغییر دهید.')}
+   ${filtered.length?pageControl:''}
+  </section>
+  <div class="inline-note warning">ثبت نتیجه مراجعه، فقط سابقه ویزیت را ذخیره می‌کند و به‌تنهایی فاکتور فروش یا دریافت وجه ایجاد نمی‌کند. برای ثبت مبلغ فروش یا تسویه، از بخش فروش و حساب مشتری استفاده کنید.</div>
+ </div>`;
+}
+function weekdayForRoute(date){
+ const parts=String(date||'').split('-').map(Number);
+ if(parts.length!==3||!parts.every(Number.isFinite))return '';
+ const d=new Date(Date.UTC(parts[0],parts[1]-1,parts[2]));
+ return weekday[d.getUTCDay()]||'';
+}
+
+function profitPage(){
+ const invalidRange=profitState.from&&profitState.to&&profitState.from>profitState.to;
+ const report=invalidRange?null:buildProfitReport(data.sales,data.purchases,profitState.from,profitState.to);
+ const q=profitState.query.trim().toLocaleLowerCase('fa');
+ const filtered=(report?.rows||[]).filter(row=>!q||[row.invoiceNo,row.customerName].filter(Boolean).join(' ').toLocaleLowerCase('fa').includes(q));
+ const pages=Math.max(1,Math.ceil(filtered.length/PAGE_SIZE));profitState.page=Math.min(Math.max(1,profitState.page),pages);
+ const start=(profitState.page-1)*PAGE_SIZE,rows=filtered.slice(start,start+PAGE_SIZE);
+ const pageControl=`<div class="pagination"><span>نمایش ${filtered.length?start+1:0} تا ${Math.min(start+PAGE_SIZE,filtered.length)} از ${filtered.length}</span>${pages>1?`<div class="pagination-actions"><button class="btn sm outline" type="button" data-profit-page="prev" ${start===0?'disabled':''}>قبلی</button><span>صفحه ${profitState.page} از ${pages}</span><button class="btn sm outline" type="button" data-profit-page="next" ${profitState.page>=pages?'disabled':''}>بعدی</button></div>`:''}</div>`;
+ const margin=report?.marginPercent===null||report?.marginPercent===undefined?'—':new Intl.NumberFormat('fa-IR',{maximumFractionDigits:1}).format(report.marginPercent)+'٪';
+ return `<div class="profit-page">
+  <section class="card profit-filter-card"><div class="profit-filter-heading"><div><h2>گزارش سود و فروش</h2><p class="small muted">بازه زمانی را انتخاب کنید؛ فاکتورهای باطل‌شده در گزارش نیستند.</p></div><span class="tag">برآورد سود ناخالص</span></div>
+   <div class="profit-filters"><div class="field"><label>از تاریخ</label><input type="date" data-profit-from value="${esc(profitState.from)}"/></div><div class="field"><label>تا تاریخ</label><input type="date" data-profit-to value="${esc(profitState.to)}"/></div><div class="field profit-search-field"><label>جستجوی فاکتور یا مشتری</label><input type="search" data-profit-search value="${esc(profitState.query)}" placeholder="شماره فاکتور یا نام مشتری…"/></div></div>
+  </section>
+  ${invalidRange?'<div class="inline-note warning">تاریخ شروع باید قبل از تاریخ پایان باشد.</div>':`
+  <div class="grid profit-stats">
+   <div class="stat"><span class="stat-label">فروش ثبت‌شده</span><strong class="stat-value">${money(report.revenue)}</strong><small class="muted">${report.salesCount} فاکتور فعال</small></div>
+   <div class="stat"><span class="stat-label">بهای خرید قابل محاسبه</span><strong class="stat-value">${money(report.costOfGoods)}</strong><small class="muted">${report.coveredSales} فاکتور با بهای کامل</small></div>
+   <div class="stat profit-highlight"><span class="stat-label">سود ناخالص برآوردی</span><strong class="stat-value">${money(report.grossProfit)}</strong><small class="muted">حاشیه سود ${margin}</small></div>
+   <div class="stat"><span class="stat-label">فاکتور با بهای نامشخص</span><strong class="stat-value">${report.unknownSales}</strong><small class="muted">${money(report.unknownRevenue)} فروش بدون بهای کامل</small></div>
+  </div>
+  <section class="card profit-table-card"><div class="card-header"><div><h2>سود هر فاکتور</h2><p class="small muted">${report.snapshotSales} فاکتور با بهای ثبت‌شده · ${report.estimatedSales} فاکتور با بهای تاریخی بازسازی‌شده</p></div><span class="tag">${filtered.length} نتیجه</span></div>
+   <div class="profit-search-row"><label class="list-search"><span aria-hidden="true">⌕</span><input type="search" data-profit-search value="${esc(profitState.query)}" placeholder="نام مشتری یا شماره فاکتور…"/></label></div>
+   ${rows.length?`<div class="table-wrap"><table class="data-table profit-table"><thead><tr><th>فاکتور / مشتری</th><th>تاریخ</th><th>فروش</th><th>بهای خرید</th><th>سود ناخالص</th><th>مبنای هزینه</th></tr></thead><tbody>${rows.map(row=>`<tr><td class="name-cell"><strong>${esc(row.customerName)}</strong><small>${esc(row.invoiceNo)}</small></td><td>${dateFa(row.createdAt)}</td><td>${money(row.revenue)}</td><td>${row.costComplete?money(row.cost):'—'}</td><td>${row.costComplete?`<strong class="${row.grossProfit>=0?'route-good':'debt'}">${money(row.grossProfit)}</strong>`:'—'}</td><td><span class="tag ${row.costSource==='missing'?'low':'good'}">${row.costSource==='snapshot'?'میانگین موزون ثبت‌شده':row.costSource==='historical-estimate'?'برآورد از سوابق خرید':'بهای خرید نامشخص'}</span></td></tr>`).join('')}</tbody></table></div>${pageControl}`:empty('🔎','فاکتوری در این بازه پیدا نشد','بازه زمانی یا عبارت جستجو را تغییر دهید.')}
+  </section>`}
+  <div class="inline-note warning">سود نمایش‌داده‌شده، سود ناخالص بر پایه میانگین موزون بهای خرید است؛ هزینه‌های حمل، اجاره، حقوق، ضایعات و مالیات از آن کسر نشده‌اند. برای فاکتورهای قدیمی که بهای خرید هنگام فروش ذخیره نشده، سیستم از سوابق خرید موجود برآورد تاریخی می‌سازد؛ فاکتورهای فاقد سابقه خرید کافی جداگانه مشخص می‌شوند.</div>
+ </div>`;
+}
+
 function backupPage(){const c=data.products.length+data.customers.length+data.sales.length;
  return `<div class="grid two"><section class="card"><div class="card-header"><h2>خروجی رمزگذاری‌شده</h2><span class="tag good">دستی و آفلاین</span></div>
  <p class="text-sm muted" style="line-height:2">یک فایل شامل تمام اطلاعات خرید، موجودی، مشتریان، فاکتورها و دریافت‌ها ساخته می‌شود. آن را روی حافظه خارجی یا جای امن دیگری نگه دارید.</p>
