@@ -11,25 +11,30 @@ Date: 2026-11-23
 - Receipt editing validates linked invoice totals; receipt voiding preserves the record and removes it from customer balance calculations.
 - Customer balances and daily sales exclude voided documents.
 - Dashboard greets Ali and includes a creator credit linking to Parviz Bahrami's personal website.
+- Customer directory now supports live search by name, phone number and district.
+- Customer account statement shows invoices and receipts chronologically, debit/credit totals, running balance and voided records without counting voids.
+- Dashboard follow-up suggestions identify customers with an outstanding balance or at least seven days since their latest active sale.
+- Sales flow adds a shortcut to create a customer and preserves the in-progress invoice draft when navigating between pages; focus moves to the next field after product/unit selection.
+- Desktop shell is full-width with the right sidebar anchored to the viewport edge. This removes the centered 1800px max-width gutter visible in the supplied v0.1.5 screenshot.
+- Responsive customer cards, statement modal, search, follow-up cards and touch layouts added.
 - Branded AliFactor invoice layout identifies Ali and Hamadan as issuer/business location.
 - Invoice PNG generation and native Android Web Share file-sharing path added; text-share/download fallback retained.
 - Invoice print view now includes seller identity, linked receipts and invoice balance.
-- Service Worker cache bumped to v6.
-- PWA shell cache bumped to v5.
+- PWA shell cache bumped to v11.
 
 ## Executed checks
 
-- GitHub Actions Quality Checks: PASS — 22 tests, 0 failures.
+- GitHub Actions Quality Checks: PASS — 37 tests, 0 failures.
 - JavaScript syntax checks: PASS for domain, data, backup, app, utils, service worker and build script.
 - Static PWA build: PASS.
 - GitHub Pages deployment: PASS.
-- Latest code commit under test: `8be3a03d232c02a6b8c2a859358e048b7789d29c`.
-- Latest successful CI run: https://github.com/ParvizBahramib73/warehouse-lite/actions/runs/PENDING_FINAL_CI
-- Latest successful Pages deployment: https://github.com/ParvizBahramib73/warehouse-lite/actions/runs/PENDING_FINAL_DEPLOY
+- Latest code commit under test: `d308d224aacb4329e0cf2dcd7253c989481d8fc6`.
+- Latest successful CI run: https://github.com/ParvizBahramib73/warehouse-lite/actions/runs/45181922646
+- Latest successful Pages deployment: https://github.com/ParvizBahramib73/warehouse-lite/actions/runs/45181922586
 
 ## Not executed or not established
 
-- Real Chromium/PWA UI flow: NOT RUN in this environment.
+- Real Chromium/PWA UI flow: NOT RUN in this environment; the supplied screenshot was inspected, and CSS/layout contracts are covered by source tests.
 - Android device install, mobile/tablet UX, offline restart and Service Worker cache refresh: NOT RUN.
 - IndexedDB transaction integration tests on an actual browser: NOT RUN.
 - Manual verification of each edit/archive/delete/void workflow with a seeded browser database: NOT RUN.
@@ -60,6 +65,7 @@ Date: 2026-11-23
 3. Implement proper return documents, cheque workflow and account allocation.
 4. Add browser-level end-to-end tests for editing and reversal dialogs.
 5. Keep using synthetic data until the release gate is explicitly accepted.
+6. Validate customer statement totals and follow-up relevance with Ali's real business workflow using synthetic/test records first.
 
 
 ## Invoice sharing verification
