@@ -251,12 +251,23 @@ function backupPage(){const c=data.products.length+data.customers.length+data.sa
  <div class="actions"><button class="btn outline sm" data-action="persist">درخواست ذخیره‌سازی پایدار مرورگر</button><button class="btn outline sm" data-action="offline-check">بررسی اتصال</button></div>
  </section>`;}
 
-function setPage(next){if(!titleMap[next])return;page=next;currentTab='list';render();window.scrollTo({top:0,behavior:'instant'});if(page==='sales')updateSaleTotal();}
-
-function updateSaleTotal(){const form=$('#sale-form');if(!form)return;currRows(form);
- try{const valid=saleRows.filter(r=>r.productId&&r.quantity&&r.unitPrice);if(valid.length!==saleRows.length){$('#sale-total').textContent='—';return;}
- const out=validateSaleLines(saleRows,data.products);$('#sale-total').textContent=money(out.total);
- }catch(e){$('#sale-total').textContent=e.message.includes('موجودی')?'موجودی ناکافی':'—';}}
+function setPage(next){if(!titleMap[next])return;page=next;currentTab='list';render();window.scrollTo({top:0,behavior:'instant'});if(page==='sales')updateSaleTotal($('#sale-form'));}
+function updateSaleTotal(form){
+ const target=form||(editor?.type==='sale'?$('#sale-edit-form'):$('#sale-form'));if(!target)return;currRows(target);
+ try{
+  const valid=saleRows.filter(r=>r.productId&&r.quantity&&r.unitPrice);
+  const output=target.id==='sale-edit-form'?$('#sale-edit-total'):$('#sale-total');
+  if(!output)return;
+  if(valid.length!==saleRows.length){output.textContent='—';return;}
+  let products=data.products;
+  if(target.id==='sale-edit-form'){
+   const sale=data.sales.find(x=>x.id===editor.id),oldRequired=new Map();
+   for(const line of sale?.lines||[])oldRequired.set(line.productId,(oldRequired.get(line.productId)||0)+line.quantityBase);
+   products=data.products.map(p=>({...p,stockBase:p.stockBase+(oldRequired.get(p.id)||0)}));
+  }
+  const out=validateSaleLines(saleRows,products);output.textContent=money(out.total);
+ }catch(e){const output=target.id==='sale-edit-form'?$('#sale-edit-total'):$('#sale-total');if(output)output.textContent=e.message.includes('موجودی')?'موجودی ناکافی':'—';}
+}
 
 function invoicePopup(id){const sale=data.sales.find(s=>s.id===id);if(!sale)return notify('فاکتور یافت نشد.','error');
  const win=window.open('','_blank');if(!win)return notify('مرورگر اجازه بازکردن پنجره چاپ را نداد.','error');
@@ -276,12 +287,38 @@ async function makeDemo(){if(data.products.length||data.customers.length||data.s
 }
 
 app.addEventListener('click',async(event)=>{
+ const close=event.target.closest('[data-close-editor]');if(close){closeEditor();return;}
  const nav=event.target.closest('[data-nav]');if(nav){setPage(nav.dataset.nav);return;}
  const invoice=event.target.closest('[data-invoice]');if(invoice){invoicePopup(invoice.dataset.invoice);return;}
- const remove=event.target.closest('[data-remove-line]');if(remove){currRows($('#sale-form'));saleRows.splice(Number(remove.dataset.removeLine),1);render();updateSaleTotal();return;}
+ const editMaster=event.target.closest('[data-edit-type]');if(editMaster){openEditor(editMaster.dataset.editType,editMaster.dataset.recordId);return;}
+ const toggle=event.target.closest('[data-toggle-type]');if(toggle){
+  try{await setRecordActive(db,({product:'products',supplier:'suppliers',customer:'customers'})[toggle.dataset.toggleType],toggle.dataset.recordId,toggle.dataset.active==='true');await refresh();notify(toggle.dataset.active==='true'?'رکورد دوباره فعال شد.':'رکورد غیرفعال شد؛ سوابق آن حفظ شده‌اند.');}catch(e){notify(e.message,'error');}return;
+ }
+ const del=event.target.closest('[data-delete-type]');if(del){
+  const type=del.dataset.deleteType,id=del.dataset.recordId,table=({product:'products',supplier:'suppliers',customer:'customers'})[type],row=data[table].find(x=>x.id===id);
+  if(!confirm(\`حذف دائمی «\${row?.name||'این رکورد'}»؟ این عملیات فقط برای رکورد بدون سابقه مجاز است.\`))return;
+  try{await deleteRecord(db,table,id);await refresh();notify('رکورد حذف شد.');}catch(e){notify(e.message,'error');}return;
+ }
+ const editPurchase=event.target.closest('[data-edit-purchase]');if(editPurchase){openEditor('purchase',editPurchase.dataset.editPurchase);return;}
+ const voidPurchaseButton=event.target.closest('[data-void-purchase]');if(voidPurchaseButton){
+  if(!confirm('این سند خرید باطل شود؟ موجودی به اندازه مقدار خرید کاهش می‌یابد و سابقه سند حفظ می‌شود.'))return;
+  try{await voidPurchase(db,voidPurchaseButton.dataset.voidPurchase);await refresh();notify('سند خرید باطل و گردش موجودی اصلاح شد.');}catch(e){notify(e.message,'error');}return;
+ }
+ const editSale=event.target.closest('[data-edit-sale]');if(editSale){openEditor('sale',editSale.dataset.editSale);return;}
+ const voidSaleButton=event.target.closest('[data-void-sale]');if(voidSaleButton){
+  if(!confirm('فاکتور باطل شود؟ کالاها به موجودی برمی‌گردند. اگر دریافت وجه یا تسویه بعدی وجود داشته باشد، عملیات به‌صورت امن متوقف می‌شود.'))return;
+  try{await voidSale(db,voidSaleButton.dataset.voidSale);await refresh();notify('فاکتور باطل و موجودی اصلاح شد.');}catch(e){notify(e.message,'error');}return;
+ }
+ const editPayment=event.target.closest('[data-edit-payment]');if(editPayment){openEditor('payment',editPayment.dataset.editPayment);return;}
+ const voidPaymentButton=event.target.closest('[data-void-payment]');if(voidPaymentButton){
+  if(!confirm('این دریافت باطل شود؟ سابقه آن حفظ می‌شود و مانده حساب مشتری دوباره محاسبه خواهد شد.'))return;
+  try{await voidPayment(db,voidPaymentButton.dataset.voidPayment);await refresh();notify('دریافت باطل شد و مانده حساب به‌روزرسانی شد.');}catch(e){notify(e.message,'error');}return;
+ }
+ const saleForm=event.target.closest('[data-sale-lines-form]');
+ const remove=event.target.closest('[data-remove-line]');if(remove&&saleForm){currRows(saleForm);saleRows.splice(Number(remove.dataset.removeLine),1);render();updateSaleTotal();return;}
  const act=event.target.closest('[data-action]');if(!act)return;
  try{
-  if(act.dataset.action==='add-line'){currRows($('#sale-form'));saleRows.push({productId:'',unit:'',quantity:'1',unitPrice:''});render();updateSaleTotal();}
+  if(act.dataset.action==='add-line'&&saleForm){currRows(saleForm);saleRows.push({productId:'',unit:'',quantity:'1',unitPrice:''});render();updateSaleTotal();}
   if(act.dataset.action==='demo'){await makeDemo();}
   if(act.dataset.action==='restore'){
     if(!importCandidate)throw new Error('ابتدا فایل پشتیبان را بررسی کنید.');
@@ -293,7 +330,7 @@ app.addEventListener('click',async(event)=>{
     if(!navigator.storage?.persist)throw new Error('مرورگر این قابلیت را پشتیبانی نمی‌کند.');
     const ok=await navigator.storage.persist();notify(ok?'مرورگر ذخیره‌سازی پایدار را پذیرفت؛ همچنان پشتیبان بگیرید.':'مرورگر درخواست را نپذیرفت؛ حتماً خارج از دستگاه پشتیبان نگه دارید.',ok?'ok':'error');
   }
-  if(act.dataset.action==='offline-check'){notify(navigator.onLine?'اکنون آنلاین هستید. برای تست واقعی حالت پرواز را فعال کنید.':'اکنون بدون اینترنت کار می‌کنید.');}
+  if(act.dataset.action==='offline-check')notify(navigator.onLine?'اکنون آنلاین هستید. برای تست واقعی حالت پرواز را فعال کنید.':'اکنون بدون اینترنت کار می‌کنید.');
  }catch(e){notify(e.message||'خطایی رخ داد.','error');}
 });
 
@@ -302,56 +339,77 @@ app.addEventListener('change',event=>{
   const p=data.products.find(p=>p.id===event.target.value);
   const select=$('#purchase-unit');select.innerHTML=p?productUnits(p).map(([v,l])=>opt(v,l,'')).join(''):'<option value="">انتخاب کالا</option>';
  }
- if(event.target.matches('[data-sale-product]')){
-  const index=Number(event.target.dataset.saleProduct);currRows($('#sale-form'));
+ const saleForm=event.target.closest('[data-sale-lines-form]');
+ if(event.target.matches('[data-sale-product]')&&saleForm){
+  const index=Number(event.target.dataset.saleProduct);currRows(saleForm);
   const p=data.products.find(p=>p.id===saleRows[index]?.productId);
   if(p){saleRows[index].unit=productUnits(p)[0][0];saleRows[index].unitPrice=String(defaultUnitPrice(p,saleRows[index].unit));}
   render();updateSaleTotal();
  }
- if(event.target.closest('#sale-form')&&event.target.name==='unit'){
-   currRows($('#sale-form'));const idx=Number(event.target.closest('[data-sale-row]').dataset.saleRow),p=data.products.find(x=>x.id===saleRows[idx].productId);
-   if(p)saleRows[idx].unitPrice=String(defaultUnitPrice(p,saleRows[idx].unit));render();updateSaleTotal();
+ if(saleForm&&event.target.name==='unit'){
+  currRows(saleForm);const idx=Number(event.target.closest('[data-sale-row]').dataset.saleRow),p=data.products.find(x=>x.id===saleRows[idx].productId);
+  if(p)saleRows[idx].unitPrice=String(defaultUnitPrice(p,saleRows[idx].unit));render();updateSaleTotal();
  }
 });
-app.addEventListener('input',event=>{if(event.target.closest('#sale-form'))updateSaleTotal();});
+app.addEventListener('input',event=>{const saleForm=event.target.closest('[data-sale-lines-form]');if(saleForm)updateSaleTotal(saleForm);});
 
 app.addEventListener('submit',async(event)=>{
  const form=event.target.closest('[data-form]');if(!form)return;
- event.preventDefault();const kind=form.dataset.form,submit=form.querySelector('[type=submit]');if(submit)submit.disabled=true;
+ event.preventDefault();const kind=form.dataset.form,submitButton=form.querySelector('[type=submit]');if(submitButton)submitButton.disabled=true;
  try{
-   if(kind==='product'){
-     const name=formVal(form,'name');if(!name)throw new Error('نام کالا الزامی است.');
-     const base=formVal(form,'kind');
-     const lowInput=formVal(form,'low'),packInput=formVal(form,'pack');
-     const lowBase=base==='gram'?asDecimalMilli(lowInput,'حد موجودی'):asInteger(lowInput,'حد موجودی');
-     const packBase=!packInput?0:(base==='gram'?asDecimalMilli(packInput,'اندازه بسته'):asInteger(packInput,'اندازه بسته'));
-     if(packBase===1)throw new Error('اندازه بسته باید بیشتر از یک واحد پایه باشد.');
-     const salePrice=asInteger(formVal(form,'salePrice'),'قیمت');
-     const code=formVal(form,'code');if(code&&data.products.some(p=>p.code===code))throw new Error('کد کالا تکراری است.');
-     await addRecord(db,'products',{name,code,category:formVal(form,'category'),kind:base,lowBase,packBase,salePrice,stockBase:0,lastBuyPrice:0});
-   }
-   else if(kind==='supplier'){const name=formVal(form,'name');if(!name)throw new Error('نام الزامی است.');await addRecord(db,'suppliers',{name,phone:formVal(form,'phone')});}
-   else if(kind==='customer'){const name=formVal(form,'name');if(!name)throw new Error('نام الزامی است.');await addRecord(db,'customers',{name,phone:formVal(form,'phone'),district:formVal(form,'district'),visitDay:formVal(form,'visitDay'),note:formVal(form,'note')});}
-   else if(kind==='purchase'){await addPurchase(db,{supplierId:formVal(form,'supplierId'),productId:formVal(form,'productId'),unit:formVal(form,'unit'),quantity:formVal(form,'quantity'),unitPrice:formVal(form,'unitPrice'),paymentKind:formVal(form,'paymentKind')});}
-   else if(kind==='sale'){
-     currRows(form);const lines=saleRows.map(x=>({...x}));
-     await addSale(db,{customerId:formVal(form,'customerId'),lines,paidAmount:formVal(form,'paidAmount'),paymentMethod:formVal(form,'paymentMethod')});
-     saleRows=[{productId:'',unit:'',quantity:'1',unitPrice:''}];saleState={customerId:'',paidAmount:'0',paymentMethod:'cash'};
-   }
-   else if(kind==='payment'){await addPayment(db,{customerId:formVal(form,'customerId'),amount:formVal(form,'amount'),method:formVal(form,'method'),note:formVal(form,'note')});}
-   else if(kind==='export'){
-     const backup=await encryptBackup(data,formVal(form,'password'));
-     downloadBackup(backup);notify('فایل پشتیبان برای ذخیره ارائه شد. ذخیره واقعی فایل را در Downloads بررسی کنید.');return;
-   }
-   else if(kind==='import'){
-     importCandidate=null;importWrapper=null;
-     const file=form.querySelector('[name=file]').files?.[0];
-     importWrapper=await readBackupFile(file);importCandidate=await decryptBackup(importWrapper,formVal(form,'password'));
-     render();notify('فایل بررسی شد و هنوز هیچ اطلاعاتی تغییر نکرده است.');return;
-   }
-   await refresh();notify('عملیات با موفقیت ثبت شد.');
+  if(kind==='product'){
+   const name=formVal(form,'name');if(!name)throw new Error('نام کالا الزامی است.');
+   const base=formVal(form,'kind'),lowInput=formVal(form,'low'),packInput=formVal(form,'pack');
+   const lowBase=base==='gram'?asDecimalMilli(lowInput,'حد موجودی'):asInteger(lowInput,'حد موجودی');
+   const packBase=!packInput?0:(base==='gram'?asDecimalMilli(packInput,'اندازه بسته'):asInteger(packInput,'اندازه بسته'));
+   if(packBase===1)throw new Error('اندازه بسته باید بیشتر از یک واحد پایه باشد.');
+   const salePrice=asInteger(formVal(form,'salePrice'),'قیمت'),code=formVal(form,'code');
+   if(code&&data.products.some(p=>p.code===code))throw new Error('کد کالا تکراری است.');
+   await addRecord(db,'products',{name,code,category:formVal(form,'category'),kind:base,lowBase,packBase,salePrice,stockBase:0,lastBuyPrice:0});
+  }
+  else if(kind==='supplier'){const name=formVal(form,'name');if(!name)throw new Error('نام الزامی است.');await addRecord(db,'suppliers',{name,phone:formVal(form,'phone')});}
+  else if(kind==='customer'){const name=formVal(form,'name');if(!name)throw new Error('نام الزامی است.');await addRecord(db,'customers',{name,phone:formVal(form,'phone'),district:formVal(form,'district'),visitDay:formVal(form,'visitDay'),note:formVal(form,'note')});}
+  else if(kind==='purchase'){await addPurchase(db,{supplierId:formVal(form,'supplierId'),productId:formVal(form,'productId'),unit:formVal(form,'unit'),quantity:formVal(form,'quantity'),unitPrice:formVal(form,'unitPrice'),paymentKind:formVal(form,'paymentKind')});}
+  else if(kind==='sale'){
+   currRows(form);await addSale(db,{customerId:formVal(form,'customerId'),lines:saleRows.map(x=>({...x})),paidAmount:formVal(form,'paidAmount'),paymentMethod:formVal(form,'paymentMethod')});
+   saleRows=[{productId:'',unit:'',quantity:'1',unitPrice:''}];saleState={customerId:'',paidAmount:'0',paymentMethod:'cash'};
+  }
+  else if(kind==='payment'){await addPayment(db,{customerId:formVal(form,'customerId'),amount:formVal(form,'amount'),method:formVal(form,'method'),note:formVal(form,'note')});}
+  else if(kind==='edit-product'){
+   const row=data.products.find(x=>x.id===formVal(form,'id'));if(!row)throw new Error('کالا پیدا نشد.');
+   const base=formVal(form,'kind')||row.kind,packInput=formVal(form,'pack');
+   const lowInput=formVal(form,'low'),lowBase=base==='gram'?asDecimalMilli(lowInput,'حد هشدار'):asInteger(lowInput,'حد هشدار');
+   const packBase=form.elements.pack?(!packInput?0:(base==='gram'?asDecimalMilli(packInput,'اندازه بسته'):asInteger(packInput,'اندازه بسته'))):row.packBase;
+   if(packBase===1)throw new Error('اندازه بسته باید بیشتر از یک واحد پایه باشد.');
+   await updateRecord(db,'products',row.id,{name:formVal(form,'name'),code:formVal(form,'code'),category:formVal(form,'category'),kind:base,packBase,lowBase,salePrice:asInteger(formVal(form,'salePrice'),'قیمت فروش')});
+  }
+  else if(kind==='edit-supplier'){
+   await updateRecord(db,'suppliers',formVal(form,'id'),{name:formVal(form,'name'),phone:formVal(form,'phone')});
+  }
+  else if(kind==='edit-customer'){
+   await updateRecord(db,'customers',formVal(form,'id'),{name:formVal(form,'name'),phone:formVal(form,'phone'),district:formVal(form,'district'),visitDay:formVal(form,'visitDay'),note:formVal(form,'note')});
+  }
+  else if(kind==='edit-purchase'){
+   await updatePurchase(db,formVal(form,'id'),{supplierId:formVal(form,'supplierId'),unit:formVal(form,'unit'),quantity:formVal(form,'quantity'),unitPrice:formVal(form,'unitPrice'),paymentKind:formVal(form,'paymentKind')});
+  }
+  else if(kind==='edit-sale'){
+   currRows(form);await updateSale(db,formVal(form,'id'),saleRows.map(x=>({...x})));
+  }
+  else if(kind==='edit-payment'){
+   await updatePayment(db,formVal(form,'id'),{amount:formVal(form,'amount'),method:formVal(form,'method'),note:formVal(form,'note')});
+  }
+  else if(kind==='export'){
+   const backup=await encryptBackup(data,formVal(form,'password'));downloadBackup(backup);notify('فایل پشتیبان برای ذخیره ارائه شد. ذخیره واقعی فایل را در Downloads بررسی کنید.');return;
+  }
+  else if(kind==='import'){
+   importCandidate=null;importWrapper=null;const file=form.querySelector('[name=file]').files?.[0];
+   importWrapper=await readBackupFile(file);importCandidate=await decryptBackup(importWrapper,formVal(form,'password'));
+   render();notify('فایل بررسی شد و هنوز هیچ اطلاعاتی تغییر نکرده است.');return;
+  }
+  if(kind.startsWith('edit-')){const wasSale=editor?.type==='sale';editor=null;if(wasSale){saleRows=[{productId:'',unit:'',quantity:'1',unitPrice:''}];saleState={customerId:'',paidAmount:'0',paymentMethod:'cash'};}}
+  await refresh();notify(kind.startsWith('edit-')?'تغییرات با موفقیت ذخیره شد.':'عملیات با موفقیت ثبت شد.');
  }catch(e){if(kind==='import'){importCandidate=null;importWrapper=null;render();}notify(e.message||'در ثبت اطلاعات خطایی رخ داد.','error');}
- finally{if(submit&&submit.isConnected)submit.disabled=false;}
+ finally{if(submitButton&&submitButton.isConnected)submitButton.disabled=false;}
 });
 
 async function init(){try{
