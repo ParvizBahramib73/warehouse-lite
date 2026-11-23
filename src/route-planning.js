@@ -78,7 +78,7 @@ export function summarizeRoute(rows=[]){
   const outcome=VISIT_OUTCOMES[row.outcome]?row.outcome:'planned';
   summary[outcome]=(summary[outcome]||0)+1;
   if(VISITED_OUTCOMES.includes(outcome))summary.visited++;
-  if(FOLLOW_UP_OUTCOMES.includes(outcome)||row.isFollowUp)summary.needsFollowUp++;
+  if(FOLLOW_UP_OUTCOMES.includes(outcome)||(row.isFollowUp&&outcome==='planned'))summary.needsFollowUp++;
  }
  return summary;
 }
