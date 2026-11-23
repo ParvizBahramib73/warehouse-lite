@@ -1,7 +1,7 @@
 import {openDb,readAll,addRecord,addPurchase,addSale,addPayment,replaceAll} from './data.js';
 import {asInteger,asDecimalMilli,money,stockLabel,defaultUnitPrice,validateSaleLines,customerBalance,makeId,isoNow} from './domain.js';
 import {encryptBackup,decryptBackup,validateSnapshot,downloadBackup,readBackupFile} from './backup.js';
-import {esc,dateFa,dayFa,todayTehran} from './utils.js';
+import {esc,dateFa,dayFa,todayTehran,optionMarkup} from './utils.js';
 
 const app=document.getElementById('app');
 let db, data, page='dashboard', toastTimer, importCandidate=null, importWrapper=null, saleRows=[{productId:'',unit:'',quantity:'1',unitPrice:''}];
@@ -17,7 +17,7 @@ const opt=(v,label,selected)=>`<option value="${esc(v)}" ${v===selected?'selecte
 const formVal=(form,name)=>String(new FormData(form).get(name)??'').trim();
 const stockTone=p=>p.stockBase<=p.lowBase?'low':'good';
 const productUnits=p=>{if(!p)return[];const u=p.kind==='gram'?[['kg','کیلوگرم']]:[['piece','عدد']];if(p.packBase>1)u.push(['pack','بسته']);return u;};
-const dropdown=(items,key,label,placeholder='انتخاب کنید',selected='')=>`<option value="">${placeholder}</option>${items.map(r=>`<option value="${esc(r.id)}" ${selected===r.id?'selected':''}>${esc(r[label])}</option>`).join('')}`;
+
 const selectUnit=(product,value,name)=>`<select name="${name}" required>${productUnits(product).map(([v,l])=>opt(v,l,value)).join('')}</select>`;
 const currRows=(form)=>{if(!form)return; saleState={customerId:form.querySelector('[name=customerId]')?.value||'',paidAmount:form.querySelector('[name=paidAmount]')?.value||'0',paymentMethod:form.querySelector('[name=paymentMethod]')?.value||'cash'};const entries=[...form.querySelectorAll('[data-sale-row]')];saleRows=entries.map((el)=>({productId:el.querySelector('[name=productId]')?.value||'',unit:el.querySelector('[name=unit]')?.value||'',quantity:el.querySelector('[name=quantity]')?.value||'',unitPrice:el.querySelector('[name=unitPrice]')?.value||''}));};
 
@@ -79,8 +79,8 @@ function productsPage(){return `<div class="grid two"><section class="card"><div
 function purchasesPage(){
  return `<div class="grid two"><section class="card"><div class="card-header"><h2>ثبت خرید و ورود به انبار</h2></div>
   <form data-form="purchase" class="form-grid">
-   <div class="field"><label>تأمین‌کننده *</label><select name="supplierId" required>${dropdown(data.suppliers,'id','name')}</select></div>
-   <div class="field"><label>کالا *</label><select name="productId" required id="purchase-product">${dropdown(data.products,'id','name')}</select></div>
+   <div class="field"><label>تأمین‌کننده *</label><select name="supplierId" required>${optionMarkup(data.suppliers,'id','name')}</select></div>
+   <div class="field"><label>کالا *</label><select name="productId" required id="purchase-product">${optionMarkup(data.products,'id','name')}</select></div>
    <div class="field"><label>مقدار *</label><input name="quantity" required inputmode="decimal" placeholder="مثلاً ۱۰ یا ۲٫۵"/></div>
    <div class="field"><label>واحد *</label><select name="unit" id="purchase-unit"><option value="">ابتدا کالا را انتخاب کنید</option></select></div>
    <div class="field"><label>قیمت خرید هر واحد (تومان) *</label><input name="unitPrice" required inputmode="numeric" placeholder="مثلاً ۲۵۰۰۰۰"/></div>
@@ -94,7 +94,7 @@ function saleRow(i,row){
  const p=data.products.find(x=>x.id===row.productId);
  const unit=row.unit&&productUnits(p).some(x=>x[0]===row.unit)?row.unit:productUnits(p)[0]?.[0]||'';
  return `<div class="line-form" data-sale-row="${i}"><div class="line-form-head"><strong class="small">قلم ${new Intl.NumberFormat('fa-IR').format(i+1)}</strong>${saleRows.length>1?`<button type="button" class="btn sm danger" data-remove-line="${i}">حذف</button>`:''}</div>
- <div class="line-grid"><div class="field"><label>کالا</label><select name="productId" data-sale-product="${i}" required>${data.products.length?dropdown(data.products,'id','name','انتخاب کالا'):'<option value="">ابتدا کالا تعریف کنید</option>'}</select></div>
+ <div class="line-grid"><div class="field"><label>کالا</label><select name="productId" data-sale-product="${i}" required>${data.products.length?optionMarkup(data.products,'id','name','انتخاب کالا',row.productId):'<option value="">ابتدا کالا تعریف کنید</option>'}</select></div>
  <div class="field"><label>مقدار</label><input name="quantity" required inputmode="decimal" value="${esc(row.quantity)}" placeholder="۱"/></div>
  <div class="field"><label>واحد</label><select name="unit">${p?productUnits(p).map(([v,l])=>opt(v,l,unit)).join(''):'<option value="">—</option>'}</select></div>
  <div class="field"><label>قیمت واحد (تومان)</label><input name="unitPrice" required inputmode="numeric" value="${esc(row.unitPrice)}" placeholder="قیمت دلخواه"/></div></div>
@@ -102,7 +102,7 @@ function saleRow(i,row){
 }
 function salesPage(){
  return `<div class="grid two"><section class="card"><div class="card-header"><h2>صدور فاکتور فروش</h2><span class="tag">موجودی پس از تأیید کم می‌شود</span></div>
- <form data-form="sale" id="sale-form"><div class="field"><label>مشتری *</label><select name="customerId" required>${dropdown(data.customers,'id','name','انتخاب مشتری',saleState.customerId)}</select></div><div class="section-split" style="margin:18px 0"></div>
+ <form data-form="sale" id="sale-form"><div class="field"><label>مشتری *</label><select name="customerId" required>${optionMarkup(data.customers,'id','name','انتخاب مشتری',saleState.customerId)}</select></div><div class="section-split" style="margin:18px 0"></div>
  <div id="sale-lines">${saleRows.map((row,i)=>saleRow(i,row)).join('')}</div><button class="btn outline sm" data-action="add-line" type="button">+ افزودن قلم دیگر</button>
  <div class="line-summary"><span>جمع فاکتور</span><strong class="headline-number" id="sale-total">—</strong></div>
  <div class="form-grid" style="margin-top:18px"><div class="field"><label>مبلغ دریافت اولیه (تومان)</label><input name="paidAmount" inputmode="numeric" value="${esc(saleState.paidAmount)}" required/></div>
@@ -119,7 +119,7 @@ function customersPage(){return `<div class="grid two"><section class="card"><di
  <div class="field"><label>روز ویزیت</label><select name="visitDay"><option value="">بدون برنامه</option>${weekday.map(d=>opt(d,d,'')).join('')}</select></div>
  <div class="field"><label>یادداشت / نشانی</label><input name="note" maxlength="150"/></div>
  <div class="form-footer"><button type="submit" class="btn primary full">+ ثبت مشتری</button></div></form></div>
- <div class="card"><div class="card-header"><h2>ثبت دریافت وجه</h2></div><form data-form="payment" class="form-grid"><div class="field wide"><label>مشتری *</label><select name="customerId" required>${dropdown(data.customers,'id','name')}</select></div>
+ <div class="card"><div class="card-header"><h2>ثبت دریافت وجه</h2></div><form data-form="payment" class="form-grid"><div class="field wide"><label>مشتری *</label><select name="customerId" required>${optionMarkup(data.customers,'id','name')}</select></div>
  <div class="field"><label>مبلغ (تومان)</label><input required name="amount" inputmode="numeric"/></div>
  <div class="field"><label>روش دریافت</label><select name="method"><option value="cash">نقدی</option><option value="transfer">انتقال بانکی</option></select></div>
  <div class="field wide"><label>شرح اختیاری</label><input name="note" maxlength="250" placeholder="مثلاً تسویه بخشی از بدهی"/></div>
