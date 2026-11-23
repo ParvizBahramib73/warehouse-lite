@@ -23,9 +23,9 @@ Date: 2026-11-23
 - JavaScript syntax checks: PASS for domain, data, backup, app, utils, service worker and build script.
 - Static PWA build: PASS.
 - GitHub Pages deployment: PASS.
-- Latest code commit under test: `PENDING_RELEASE_COMMIT`.
-- Latest successful CI run: https://github.com/ParvizBahramib73/warehouse-lite/actions/runs/PENDING_CI_RUN
-- Latest successful Pages deployment: https://github.com/ParvizBahramib73/warehouse-lite/actions/runs/PENDING_DEPLOY_RUN
+- Latest code commit under test: `704892358c3789b70b9ee99a3c02258ffda3da8e`.
+- Latest successful CI run: https://github.com/ParvizBahramib73/warehouse-lite/actions/runs/45173525176
+- Latest successful Pages deployment: https://github.com/ParvizBahramib73/warehouse-lite/actions/runs/45173525166
 
 ## Not executed or not established
 
@@ -60,3 +60,13 @@ Date: 2026-11-23
 3. Implement proper return documents, cheque workflow and account allocation.
 4. Add browser-level end-to-end tests for editing and reversal dialogs.
 5. Keep using synthetic data until the release gate is explicitly accepted.
+
+
+## Invoice sharing verification
+
+- Added the AliFactor invoice identity (issuer Ali, Hamadan) to the print view and share image.
+- Added a high-resolution PNG invoice image generator with customer, invoice number, item lines, totals, linked receipts and remaining amount.
+- Android file sharing uses the Web Share API (`navigator.share` + `navigator.canShare({files})`). The Android share sheet presents installed compatible apps such as WhatsApp, Telegram, Rubika and Eitaa; app availability/acceptance depends on the device.
+- Fallback: download the PNG and share the invoice summary text or copy it for manual attachment.
+- PDF remains available through the browser print/save-as-PDF flow; direct PDF file sharing is not implemented in this increment.
+- Automated invoice-share tests cover payment allocation, branded text, item details and void-invoice labelling.
