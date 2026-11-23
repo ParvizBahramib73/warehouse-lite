@@ -372,13 +372,13 @@ function visitsPage(){
   const statusLabel=VISIT_OUTCOMES[outcome]||VISIT_OUTCOMES.planned;
   return \`<article class="route-customer-card">
    <div class="route-customer-top"><span class="route-stop-number">\${new Intl.NumberFormat('fa-IR').format(stopIndex+1)}</span><div class="item-avatar">👤</div><div class="grow"><strong>\${esc(customer.name)}</strong><small>\${esc(customer.district||'بدون محله')} \${customer.phone?'· '+esc(customer.phone):'· بدون شماره تماس'}</small><span class="tag \${tone}">\${esc(statusLabel)}</span></div>\${customer.phone?\`<a class="btn sm outline" href="tel:\${esc(customer.phone)}">تماس</a>\`:''}</div>
-   \${lastVisit?\`<p class="route-previous-note">آخرین مراجعه: \${esc(weekdayForRoute(lastVisit.plannedDate))} · \${esc(lastVisit.plannedDate)} · \${esc(VISIT_OUTCOMES[lastVisit.outcome]||'ثبت مراجعه')}</p>\`:''}
+   \${lastVisit?\`<p class="route-previous-note">آخرین مراجعه: \${esc(weekdayForRoute(lastVisit.plannedDate))} · \${esc(routeDateLabel(lastVisit.plannedDate))} · \${esc(VISIT_OUTCOMES[lastVisit.outcome]||'ثبت مراجعه')}</p>\`:''}
    \${customer.isFollowUp&&customer.followUpNote?\`<p class="route-previous-note">یادداشت پیگیری قبلی: \${esc(customer.followUpNote)}</p>\`:''}
    <form data-form="visit" data-visit-form>
     <input type="hidden" name="customerId" value="\${esc(customer.id)}"/><input type="hidden" name="plannedDate" value="\${esc(visitState.date)}"/>
     <div class="field"><label>نام مسیر / محدوده</label><input name="routeName" maxlength="80" value="\${esc(routeName)}" placeholder="مثلاً مسیر کبودرآهنگ"/></div>
     <div class="field"><label>نتیجه مراجعه</label><select name="outcome" data-visit-outcome>\${Object.entries(VISIT_OUTCOMES).filter(([value])=>value!=='cancelled').map(([value,label])=>opt(value,label,outcome)).join('')}</select></div>
-    \${needsDate?\`<div class="field"><label>\${outcome==='rescheduled'?'تاریخ مراجعه بعدی *':'تاریخ پیگیری بعدی *'}</label><input type="date" name="nextFollowUpDate" value="\${esc(nextDate)}" min="\${esc(visitState.date)}" required/></div>\`:''}
+    \${needsDate?\`<div class="field"><label>\${outcome==='rescheduled'?'تاریخ مراجعه بعدی *':'تاریخ پیگیری بعدی *'}</label><input type="date" name="nextFollowUpDate" value="\${esc(nextDate)}" min="\${esc(nextRouteDate(visitState.date))}" required/></div>\`:''}
     <div class="field"><label>یادداشت نتیجه / اقلام موردنیاز \${outcome==='other'?'*':'(اختیاری)'}</label><textarea name="note" rows="2" maxlength="500" \${outcome==='other'?'required':''} placeholder="مثلاً ۲ کارتن روغن خرید؛ برای سفارش بعدی تماس بگیر…">\${esc(note)}</textarea></div>
     <button class="btn primary full" type="submit">\${outcome==='planned'?'ذخیره وضعیت مراجعه':'به‌روزرسانی نتیجه مراجعه'}</button>
    </form>
