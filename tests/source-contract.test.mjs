@@ -80,3 +80,13 @@ test('creator credit says built for Ali and all monetary fields use grouped form
  assert.ok(app.includes("app.querySelectorAll('[data-money-input]')"));
  assert.ok(utils.includes('formatGroupedInteger'));
 });
+
+test('every monetary input including edit dialogs is wired to the formatter',()=>{
+ const app=read('src/app.js');
+ const tags=[...app.matchAll(/<input[^>]*>/g)].map(m=>m[0]);
+ const priceFields=tags.filter(x=>/name="(salePrice|unitPrice|paidAmount|amount)"/.test(x));
+ assert.equal(priceFields.length,8);
+ for(const field of priceFields)assert.ok(field.includes('data-money-input'),field);
+ assert.ok(app.includes("app.addEventListener('focusout'"));
+ assert.ok(app.includes("app.addEventListener('change'"));
+});
