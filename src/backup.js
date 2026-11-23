@@ -12,9 +12,10 @@ async function key(password,salt) {
 }
 
 export function validateSnapshot(snapshot) {
-  if(!snapshot||typeof snapshot!=='object'||snapshot.schemaVersion!==1) throw new Error('نسخه پشتیبان پشتیبانی نمی‌شود.');
-  for(const table of TABLES){if(!Array.isArray(snapshot[table])||snapshot[table].length>100000)throw new Error('ساختار اطلاعات پشتیبان ناقص است.');
-    const ids=new Set();for(const row of snapshot[table]){if(!row||typeof row.id!=='string'||ids.has(row.id))throw new Error('شناسه‌های فایل پشتیبان نامعتبرند.');ids.add(row.id);}
+  if(!snapshot||typeof snapshot!=='object'||![1,2].includes(snapshot.schemaVersion)) throw new Error('نسخه پشتیبان پشتیبانی نمی‌شود.');
+  const rowsFor=table=>table==='visits'&&snapshot.schemaVersion===1&&!Array.isArray(snapshot.visits)?[]:snapshot[table];
+  for(const table of TABLES){const rows=rowsFor(table);if(!Array.isArray(rows)||rows.length>100000)throw new Error('ساختار اطلاعات پشتیبان ناقص است.');
+    const ids=new Set();for(const row of rows){if(!row||typeof row.id!=='string'||ids.has(row.id))throw new Error('شناسه‌های فایل پشتیبان نامعتبرند.');ids.add(row.id);}
   }
   const products=new Map(snapshot.products.map(x=>[x.id,x]));
   const customers=new Set(snapshot.customers.map(x=>x.id));
@@ -30,11 +31,13 @@ export function validateSnapshot(snapshot) {
     for(const line of row.lines)if(!products.has(line.productId)||!Number.isSafeInteger(line.amount)||line.amount<0)throw new Error('قلم فاکتور نامعتبر است.');
   }
   for(const row of snapshot.payments)if(!customers.has(row.customerId)||!Number.isSafeInteger(row.amount)||row.amount<0)throw new Error('دریافت وجه نامعتبر است.');
-  return Object.fromEntries(TABLES.map(t=>[t,snapshot[t].length]));
+  for(const row of rowsFor('visits'))if(!customers.has(row.customerId)||!/^\\d{4}-\\d{2}-\\d{2}$/.test(row.plannedDate)||!['planned','purchased','no_purchase','unavailable','follow_up'].includes(row.outcome)||String(row.note||'').length>500)throw new Error('سابقه مراجعه نامعتبر است.');
+  for(const sale of snapshot.sales)for(const line of sale.lines)if(line.costAmount!==undefined&&line.costAmount!==null&&(!Number.isSafeInteger(line.costAmount)||line.costAmount<0))throw new Error('بهای تمام‌شده فاکتور نامعتبر است.');
+  return Object.fromEntries(TABLES.map(t=>[t,rowsFor(t).length]));
 }
 
 export async function encryptBackup(data,password){
-  const payload={schemaVersion:1,exportedAt:new Date().toISOString(),...data};
+  const payload={...data,schemaVersion:2,visits:Array.isArray(data.visits)?data.visits:[],exportedAt:new Date().toISOString()};
   validateSnapshot(payload);
   const salt=crypto.getRandomValues(new Uint8Array(16));const iv=crypto.getRandomValues(new Uint8Array(12));
   const encrypted=await crypto.subtle.encrypt({name:'AES-GCM',iv},await key(password,salt),encoder.encode(JSON.stringify(payload)));
@@ -47,7 +50,7 @@ export async function decryptBackup(wrapper,password){
     const salt=from64(wrapper.crypto.salt),iv=from64(wrapper.crypto.iv),cipher=from64(wrapper.ciphertext);
     if(salt.length!==16||iv.length!==12||cipher.length<16||cipher.length>MAX_FILE_SIZE)throw new Error('فرمت رمزنگاری فایل نامعتبر است.');
     const plaintext=await crypto.subtle.decrypt({name:'AES-GCM',iv},await key(password,salt),cipher);
-    const data=JSON.parse(decoder.decode(plaintext)); validateSnapshot(data);return data;
+    const data=JSON.parse(decoder.decode(plaintext)); validateSnapshot(data);return {...data,schemaVersion:2,visits:Array.isArray(data.visits)?data.visits:[]};
   }catch(e){if(e.message==='نسخه پشتیبان پشتیبانی نمی‌شود.'||e.message?.includes('نامعتبر')||e.message?.includes('مطابقت'))throw e;
     throw new Error('رمز نادرست است یا فایل پشتیبان آسیب دیده است.');}
 }
