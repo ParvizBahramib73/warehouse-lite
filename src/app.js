@@ -167,7 +167,7 @@ function editorModal(){
   const hasHistory=data.movements.some(x=>x.productId===row.id)||data.purchases.some(x=>x.productId===row.id)||data.sales.some(x=>(x.lines||[]).some(line=>line.productId===row.id));
   const low=row.kind==='gram'?String(row.lowBase/1000):String(row.lowBase);
   const pack=row.kind==='gram'?String(row.packBase/1000):String(row.packBase);
-  return \`<div class="modal-backdrop" data-close-editor><section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="editor-title"><header class="modal-head"><div><h2 id="editor-title">ویرایش کالا</h2><p class="muted small">\${esc(row.name)}</p></div>\${close}</header>
+  return \`<div class="modal-backdrop" data-editor-backdrop><section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="editor-title"><header class="modal-head"><div><h2 id="editor-title">ویرایش کالا</h2><p class="muted small">\${esc(row.name)}</p></div>\${close}</header>
   <form data-form="edit-product" class="form-grid"><input type="hidden" name="id" value="\${esc(row.id)}">
    <div class="field wide"><label>نام کالا *</label><input name="name" required maxlength="100" value="\${esc(row.name)}"></div>
    <div class="field"><label>کد کالا</label><input name="code" maxlength="30" value="\${esc(row.code||'')}"></div>
@@ -179,11 +179,11 @@ function editorModal(){
   </form></section></div>\`;
  }
  if(editor.type==='supplier'){
-  return \`<div class="modal-backdrop" data-close-editor><section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="editor-title"><header class="modal-head"><div><h2 id="editor-title">ویرایش تأمین‌کننده</h2></div>\${close}</header>
+  return \`<div class="modal-backdrop" data-editor-backdrop><section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="editor-title"><header class="modal-head"><div><h2 id="editor-title">ویرایش تأمین‌کننده</h2></div>\${close}</header>
   <form data-form="edit-supplier" class="form-grid"><input type="hidden" name="id" value="\${esc(row.id)}"><div class="field wide"><label>نام *</label><input name="name" required maxlength="100" value="\${esc(row.name)}"></div><div class="field wide"><label>شماره تماس</label><input name="phone" maxlength="25" value="\${esc(row.phone||'')}"></div><div class="form-footer"><button class="btn primary full" type="submit">ذخیره تغییرات</button></div></form></section></div>\`;
  }
  if(editor.type==='customer'){
-  return \`<div class="modal-backdrop" data-close-editor><section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="editor-title"><header class="modal-head"><div><h2 id="editor-title">ویرایش مشتری</h2></div>\${close}</header>
+  return \`<div class="modal-backdrop" data-editor-backdrop><section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="editor-title"><header class="modal-head"><div><h2 id="editor-title">ویرایش مشتری</h2></div>\${close}</header>
   <form data-form="edit-customer" class="form-grid"><input type="hidden" name="id" value="\${esc(row.id)}"><div class="field wide"><label>نام قنادی یا مشتری *</label><input name="name" required maxlength="100" value="\${esc(row.name)}"></div>
   <div class="field"><label>موبایل یا تلفن</label><input name="phone" inputmode="tel" maxlength="25" value="\${esc(row.phone||'')}"></div><div class="field"><label>محله یا خیابان</label><input name="district" maxlength="80" value="\${esc(row.district||'')}"></div>
   <div class="field"><label>روز ویزیت</label><select name="visitDay"><option value="">بدون برنامه</option>\${weekday.map(d=>opt(d,d,row.visitDay||'')).join('')}</select></div><div class="field"><label>یادداشت / نشانی</label><input name="note" maxlength="150" value="\${esc(row.note||'')}"></div>
@@ -193,7 +193,7 @@ function editorModal(){
   const product=data.products.find(x=>x.id===row.productId);
   const supplierOptions=data.suppliers.map(s=>({...s,displayName:s.name+(isActive(s)?'':' (غیرفعال)')}));
   const quantity=row.quantity||String(row.quantityBase);
-  return \`<div class="modal-backdrop" data-close-editor><section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="editor-title"><header class="modal-head"><div><h2 id="editor-title">ویرایش سند خرید</h2><p class="muted small">کالا: \${esc(row.productName)} · \${dateFa(row.createdAt)}</p></div>\${close}</header>
+  return \`<div class="modal-backdrop" data-editor-backdrop><section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="editor-title"><header class="modal-head"><div><h2 id="editor-title">ویرایش سند خرید</h2><p class="muted small">کالا: \${esc(row.productName)} · \${dateFa(row.createdAt)}</p></div>\${close}</header>
   <form data-form="edit-purchase" class="form-grid"><input type="hidden" name="id" value="\${esc(row.id)}"><div class="field wide"><label>تأمین‌کننده *</label><select name="supplierId" required>\${optionMarkup(supplierOptions,'id','displayName','انتخاب تأمین‌کننده',row.supplierId)}</select></div>
   <div class="field"><label>مقدار *</label><input name="quantity" required inputmode="decimal" value="\${esc(quantity)}"></div><div class="field"><label>واحد *</label><select name="unit" required>\${product?productUnits(product).map(([v,l])=>opt(v,l,row.unit)).join(''):'<option value="">—</option>'}</select></div>
   <div class="field"><label>قیمت واحد خرید (تومان) *</label><input name="unitPrice" required inputmode="numeric" value="\${row.unitPrice}"></div><div class="field"><label>روش پرداخت</label><select name="paymentKind">\${[['cash','نقدی'],['transfer','انتقال بانکی'],['credit','نسیه'],['check','چک']].map(([v,l])=>opt(v,l,row.paymentKind)).join('')}</select></div>
@@ -202,7 +202,7 @@ function editorModal(){
  }
  if(editor.type==='sale'){
   const customer=data.customers.find(x=>x.id===row.customerId);
-  return \`<div class="modal-backdrop" data-close-editor><section class="modal-card wide-modal" role="dialog" aria-modal="true" aria-labelledby="editor-title"><header class="modal-head"><div><h2 id="editor-title">ویرایش فاکتور فروش</h2><p class="muted small">\${esc(row.invoiceNo)} · مشتری: \${esc(customer?.name||row.customerName)}</p></div>\${close}</header>
+  return \`<div class="modal-backdrop" data-editor-backdrop><section class="modal-card wide-modal" role="dialog" aria-modal="true" aria-labelledby="editor-title"><header class="modal-head"><div><h2 id="editor-title">ویرایش فاکتور فروش</h2><p class="muted small">\${esc(row.invoiceNo)} · مشتری: \${esc(customer?.name||row.customerName)}</p></div>\${close}</header>
   <form data-form="edit-sale" id="sale-edit-form" data-sale-lines-form><input type="hidden" name="id" value="\${esc(row.id)}"><input type="hidden" name="customerId" value="\${esc(row.customerId)}">
   <div id="sale-edit-lines">\${saleRows.map((line,i)=>saleRow(i,line)).join('')}</div><button class="btn outline sm" data-action="add-line" type="button">+ افزودن قلم دیگر</button>
   <div class="line-summary"><span>جمع جدید فاکتور</span><strong class="headline-number" id="sale-edit-total">—</strong></div>
@@ -211,7 +211,7 @@ function editorModal(){
  }
  if(editor.type==='payment'){
   const customer=data.customers.find(x=>x.id===row.customerId);
-  return \`<div class="modal-backdrop" data-close-editor><section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="editor-title"><header class="modal-head"><div><h2 id="editor-title">ویرایش دریافت وجه</h2><p class="muted small">مشتری: \${esc(customer?.name||'—')}</p></div>\${close}</header>
+  return \`<div class="modal-backdrop" data-editor-backdrop><section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="editor-title"><header class="modal-head"><div><h2 id="editor-title">ویرایش دریافت وجه</h2><p class="muted small">مشتری: \${esc(customer?.name||'—')}</p></div>\${close}</header>
   <form data-form="edit-payment" class="form-grid"><input type="hidden" name="id" value="\${esc(row.id)}"><div class="field"><label>مبلغ (تومان) *</label><input name="amount" required inputmode="numeric" value="\${row.amount}"></div><div class="field"><label>روش دریافت</label><select name="method"><option value="cash" \${row.method==='cash'?'selected':''}>نقدی</option><option value="transfer" \${row.method==='transfer'?'selected':''}>انتقال بانکی</option></select></div><div class="field wide"><label>شرح</label><input name="note" maxlength="250" value="\${esc(row.note||'')}"></div><div class="inline-note warning wide">این تغییر مانده حساب مشتری را به‌روزرسانی می‌کند. اگر دریافت به فاکتور مشخصی وصل باشد، مبلغ نباید از مبلغ آن فاکتور بیشتر شود.</div><div class="form-footer"><button class="btn primary full" type="submit">ذخیره دریافت</button></div></form></section></div>\`;
  }
  return '';
@@ -272,7 +272,7 @@ function updateSaleTotal(form){
 function invoicePopup(id){const sale=data.sales.find(s=>s.id===id);if(!sale)return notify('فاکتور یافت نشد.','error');
  const win=window.open('','_blank');if(!win)return notify('مرورگر اجازه بازکردن پنجره چاپ را نداد.','error');
  const rowHtml=sale.lines.map((line,i)=>`<tr><td>${i+1}</td><td>${esc(line.productName)}</td><td>${esc(line.quantity)} ${line.unit==='kg'?'کیلو':line.unit==='pack'?'بسته':'عدد'}</td><td>${money(line.unitPrice)}</td><td>${money(line.amount)}</td></tr>`).join('');
- const html=`<!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>فاکتور ${esc(sale.invoiceNo)}</title><style>body{font-family:Tahoma,sans-serif;color:#172c38;padding:25px;line-height:1.8}header{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #148c72;padding-bottom:20px}h1{margin:0;font-size:24px}table{width:100%;border-collapse:collapse;margin-top:26px;text-align:right}td,th{border:1px solid #ddd;padding:10px;font-size:13px}th{background:#eff6f2}.total{font-size:19px;font-weight:bold;text-align:left;margin-top:25px}.muted{color:#60747c}.no-print{padding:10px;background:#eaf7f1;border:0;border-radius:7px;cursor:pointer;margin:20px 0} @media print{.no-print{display:none}body{padding:5px}}</style></head><body><header><div><h1>صورتحساب فروش</h1><div class="muted">Warehouse Lite · نسخه آزمایشی</div></div><div style="text-align:left">شماره: <b>${esc(sale.invoiceNo)}</b><br/>تاریخ: ${dayFa(sale.createdAt)}</div></header><p>مشتری: <strong>${esc(sale.customerName)}</strong></p><table><thead><tr><th>ردیف</th><th>شرح کالا</th><th>مقدار</th><th>قیمت واحد</th><th>جمع</th></tr></thead><tbody>${rowHtml}</tbody></table><div class="total">جمع فاکتور: ${money(sale.total)}</div><p class="muted">این سند توسط نسخه آزمایشی تهیه شده است. پیش از استفاده رسمی اطلاعات را بررسی کنید.</p><button class="no-print" onclick="window.print()">چاپ / ذخیره PDF</button></body></html>`;
+ const html=`<!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>فاکتور ${esc(sale.invoiceNo)}</title><style>body{font-family:Tahoma,sans-serif;color:#172c38;padding:25px;line-height:1.8}header{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #148c72;padding-bottom:20px}h1{margin:0;font-size:24px}table{width:100%;border-collapse:collapse;margin-top:26px;text-align:right}td,th{border:1px solid #ddd;padding:10px;font-size:13px}th{background:#eff6f2}.total{font-size:19px;font-weight:bold;text-align:left;margin-top:25px}.muted{color:#60747c}.no-print{padding:10px;background:#eaf7f1;border:0;border-radius:7px;cursor:pointer;margin:20px 0} @media print{.no-print{display:none}body{padding:5px}}</style></head><body><header><div><h1>صورتحساب فروش</h1><div class="muted">Warehouse Lite · نسخه آزمایشی</div></div><div style="text-align:left">شماره: <b>${esc(sale.invoiceNo)}</b><br/>تاریخ: ${dayFa(sale.createdAt)}</div></header>${sale.status==='void'?'<div style="margin:18px 0;padding:12px;background:#fff0f0;color:#a33;border-radius:8px;font-weight:bold">این فاکتور باطل شده است و فقط برای مشاهده سابقه نمایش داده می‌شود.</div>':''}<p>مشتری: <strong>${esc(sale.customerName)}</strong></p><table><thead><tr><th>ردیف</th><th>شرح کالا</th><th>مقدار</th><th>قیمت واحد</th><th>جمع</th></tr></thead><tbody>${rowHtml}</tbody></table><div class="total">جمع فاکتور: ${money(sale.total)}</div><p class="muted">این سند توسط نسخه آزمایشی تهیه شده است. پیش از استفاده رسمی اطلاعات را بررسی کنید.</p><button class="no-print" onclick="window.print()">چاپ / ذخیره PDF</button></body></html>`;
  win.document.open();win.document.write(html);win.document.close();
 }
 
@@ -287,7 +287,7 @@ async function makeDemo(){if(data.products.length||data.customers.length||data.s
 }
 
 app.addEventListener('click',async(event)=>{
- const close=event.target.closest('[data-close-editor]');if(close){closeEditor();return;}
+ const close=event.target.closest('[data-close-editor]');if(close||event.target.classList.contains('modal-backdrop')){closeEditor();return;}
  const nav=event.target.closest('[data-nav]');if(nav){setPage(nav.dataset.nav);return;}
  const invoice=event.target.closest('[data-invoice]');if(invoice){invoicePopup(invoice.dataset.invoice);return;}
  const editMaster=event.target.closest('[data-edit-type]');if(editMaster){openEditor(editMaster.dataset.editType,editMaster.dataset.recordId);return;}
