@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {weightedPurchaseCost,snapshotSaleLines,estimateLegacyLineCost} from '../src/costing.js';
 import {buildProfitReport} from '../src/profit-report.js';
-import {buildRoutePlan,groupRoutePlan,weekdayForDate} from '../src/route-planning.js';
+import {buildRoutePlan,groupRoutePlan,weekdayForDate,summarizeRoute,VISIT_OUTCOMES} from '../src/route-planning.js';
 
 const purchases=[
  {id:'p1',productId:'oil',createdAt:'2026-11-01T10:00:00.000Z',quantityBase:10,total:1000,status:'active'},
@@ -66,4 +66,40 @@ test('route planner groups scheduled customers by Persian weekday and includes d
  assert.equal(rows.find(x=>x.id==='c1').outcome,'planned');
  const groups=groupRoutePlan(rows);
  assert.deepEqual(groups.map(x=>x.district),['بوعلی','مهدیه']);
+});
+
+test('daily route includes manually added customers, groups named routes and counts partial purchases',()=>{
+ const customers=[
+  {id:'c1',name:'قنادی بهار',district:'مهدیه',visitDay:'دوشنبه',active:true},
+  {id:'c2',name:'قنادی گل',district:'بوعلی',visitDay:'شنبه',active:true},
+  {id:'c3',name:'قنادی لغو',district:'مهدیه',visitDay:'دوشنبه',active:true}
+ ];
+ const visits=[
+  {id:'v1',customerId:'c1',plannedDate:'2026-11-23',outcome:'small_purchase',routeName:'مسیر کبودرآهنگ',routeOrder:1,visitedAt:'2026-11-23T08:00:00.000Z',note:'نیم کارتن روغن'},
+  {id:'v2',customerId:'c2',plannedDate:'2026-11-23',outcome:'rescheduled',routeName:'مسیر کبودرآهنگ',routeOrder:2,nextFollowUpDate:'2026-11-25',note:'فردا تماس بگیر'},
+  {id:'v3',customerId:'c3',plannedDate:'2026-11-23',outcome:'cancelled',routeName:'مهدیه',routeOrder:3}
+ ];
+ const rows=buildRoutePlan(customers,visits,'2026-11-23');
+ assert.deepEqual(rows.map(row=>row.id),['c1','c2']);
+ assert.equal(rows[0].outcome,'small_purchase');
+ assert.equal(rows[0].routeName,'مسیر کبودرآهنگ');
+ assert.equal(rows[1].outcome,'rescheduled');
+ assert.equal(rows[1].nextFollowUpDate,'2026-11-25');
+ assert.deepEqual(groupRoutePlan(rows).map(group=>group.routeName),['مسیر کبودرآهنگ']);
+ const summary=summarizeRoute(rows);
+ assert.equal(summary.total,2);
+ assert.equal(summary.visited,2);
+ assert.equal(summary.small_purchase,1);
+ assert.equal(summary.needsFollowUp,1);
+ assert.equal(summary.planned,0);
+});
+
+test('visit outcome catalog includes complete, partial, no-sale, unavailable and custom results',()=>{
+ for(const key of ['purchased','small_purchase','no_purchase','unavailable','follow_up','rescheduled','not_needed','declined','other'])assert.ok(VISIT_OUTCOMES[key],key);
+});
+
+test('cancelled route stop does not reappear from its recurring weekday schedule',()=>{
+ const customers=[{id:'c1',name:'قنادی بهار',district:'مهدیه',visitDay:'دوشنبه',active:true}];
+ const visits=[{id:'v1',customerId:'c1',plannedDate:'2026-11-23',outcome:'cancelled'}];
+ assert.deepEqual(buildRoutePlan(customers,visits,'2026-11-23'),[]);
 });
