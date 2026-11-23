@@ -41,7 +41,7 @@ function visitDraftKey(customerId,date){return customerId+'|'+date;}
 function rememberVisitDraft(form){
  const values=new FormData(form),customerId=String(values.get('customerId')||''),date=String(values.get('plannedDate')||'');
  if(!customerId||!date)return;
- visitDrafts.set(visitDraftKey(customerId,date),{outcome:String(values.get('outcome')||'planned'),note:String(values.get('note')||''),nextFollowUpDate:String(values.get('nextFollowUpDate')||'')});
+ visitDrafts.set(visitDraftKey(customerId,date),{outcome:String(values.get('outcome')||'planned'),note:String(values.get('note')||''),nextFollowUpDate:String(values.get('nextFollowUpDate')||''),routeName:String(values.get('routeName')||'')});
 }
 
 const stockTone=p=>p.stockBase<=p.lowBase?'low':'good';
@@ -425,6 +425,17 @@ function weekdayForRoute(date){
  if(parts.length!==3||!parts.every(Number.isFinite))return '';
  const d=new Date(Date.UTC(parts[0],parts[1]-1,parts[2]));
  return weekday[d.getUTCDay()]||'';
+}
+function nextRouteDate(date){
+ const parts=String(date||'').split('-').map(Number);
+ if(parts.length!==3||!parts.every(Number.isFinite))return date;
+ const value=new Date(Date.UTC(parts[0],parts[1]-1,parts[2]+1));
+ return value.toISOString().slice(0,10);
+}
+function routeDateLabel(date){
+ const parts=String(date||'').split('-').map(Number);
+ if(parts.length!==3||!parts.every(Number.isFinite))return date||'—';
+ return new Intl.DateTimeFormat('fa-IR',{year:'numeric',month:'short',day:'numeric',timeZone:'UTC'}).format(new Date(Date.UTC(parts[0],parts[1]-1,parts[2],12)));
 }
 
 function profitPage(){
