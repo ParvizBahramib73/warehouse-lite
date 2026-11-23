@@ -1,4 +1,4 @@
-# Warehouse Lite v0.1.1 — test evidence
+# Warehouse Lite v0.1.2 — test evidence
 
 Date: 2026-11-23
 
@@ -10,17 +10,18 @@ Date: 2026-11-23
 - Sales invoice voiding restores stock and is blocked when customer receipts on/after the invoice date make allocation uncertain.
 - Receipt editing validates linked invoice totals; receipt voiding preserves the record and removes it from customer balance calculations.
 - Customer balances and daily sales exclude voided documents.
-- PWA shell cache bumped to v3.
+- Dashboard greets Ali and includes a creator credit linking to Parviz Bahrami's personal website.
+- PWA shell cache bumped to v5.
 
 ## Executed checks
 
-- GitHub Actions Quality Checks: PASS — 19 tests, 0 failures.
+- GitHub Actions Quality Checks: PASS — 20 tests, 0 failures.
 - JavaScript syntax checks: PASS for domain, data, backup, app, utils, service worker and build script.
 - Static PWA build: PASS.
 - GitHub Pages deployment: PASS.
-- Latest code commit under test: `82db51840d88417aaa8853fb90fa88ffa5e181d6`.
-- Latest successful CI run: https://github.com/ParvizBahramib73/warehouse-lite/actions/runs/45171053397
-- Latest successful Pages deployment: https://github.com/ParvizBahramib73/warehouse-lite/actions/runs/45171053344
+- Latest code commit under test: `4a643c8ce43761157652fd6e4f4a0b41be75790d`.
+- Latest successful CI run: https://github.com/ParvizBahramib73/warehouse-lite/actions/runs/45172341387
+- Latest successful Pages deployment: https://github.com/ParvizBahramib73/warehouse-lite/actions/runs/45172341464
 
 ## Not executed or not established
 
