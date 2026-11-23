@@ -50,7 +50,8 @@ export async function updateRecord(db, table, id, fields) {
       const baseChanged=current.kind!==fields.kind||current.packBase!==fields.packBase;
       if(baseChanged&&(hasHistory||current.stockBase!==0)) throw new Error('واحد پایه یا اندازه بسته این کالا قابل تغییر نیست؛ چون سابقه گردش یا موجودی دارد. فقط نام، دسته، قیمت و حد هشدار را ویرایش کنید.');
     }
-    const next={...current,...fields,id:current.id,createdAt:current.createdAt,stockBase:table==='products'?current.stockBase:undefined,lastBuyPrice:table==='products'?current.lastBuyPrice:undefined,modifiedAt:isoNow()};
+    const next={...current,...fields,id:current.id,createdAt:current.createdAt,modifiedAt:isoNow()};
+    if(table==='products'){next.stockBase=current.stockBase;next.lastBuyPrice=current.lastBuyPrice;}
     store.put(next); await done; return next;
   } catch(error) { return abort(tx,done,error); }
 }
@@ -112,14 +113,17 @@ export async function updatePurchase(db, id, input) {
     if(!purchase||purchase.status==='void') throw new Error('خرید پیدا نشد یا قبلاً باطل شده است.');
     const [product,supplier]=await Promise.all([request(tx.objectStore('products').get(purchase.productId)),request(tx.objectStore('suppliers').get(input.supplierId))]);
     if(!product||!supplier) throw new Error('کالا یا تأمین‌کننده پیدا نشد.');
-    if(!active(supplier)) throw new Error('تأمین‌کننده غیرفعال است.');
+    if(!active(supplier)&&supplier.id!==purchase.supplierId) throw new Error('تأمین‌کننده جدید غیرفعال است.');
     const qty=parseBaseQuantity(product,input.unit,input.quantity), price=asInteger(input.unitPrice,'قیمت خرید');
     const delta=qty.base-purchase.quantityBase;
     if(delta<0&&product.stockBase < -delta) throw new Error('موجودی فعلی برای کاهش مقدار این خرید کافی نیست؛ احتمالاً بخشی از کالا فروخته شده است.');
     const stock=product.stockBase+delta;
     if(!Number.isSafeInteger(stock)||stock<0) throw new Error('اصلاح خرید باعث موجودی نامعتبر می‌شود.');
     const now=isoNow(), total=lineTotal(price,qty.thousandths);
-    tx.objectStore('products').put({...product,stockBase:stock,lastBuyPrice:price});
+    const allPurchases=await request(tx.objectStore('purchases').getAll());
+    const latest=[...allPurchases.filter(p=>p.productId===product.id&&p.id!==id&&p.status!=='void'),{...purchase,createdAt:purchase.createdAt,unitPrice:price,status:'active'}].sort((a,b)=>b.createdAt.localeCompare(a.createdAt))[0];
+    const lastBuyPrice=latest?.unitPrice??price;
+    tx.objectStore('products').put({...product,stockBase:stock,lastBuyPrice});
     tx.objectStore('purchases').put({...purchase,supplierId:supplier.id,supplierName:supplier.name,unit:input.unit,quantity:String(input.quantity),quantityBase:qty.base,unitPrice:price,total,paymentKind:input.paymentKind,modifiedAt:now});
     if(delta) tx.objectStore('movements').add({id:makeId(),createdAt:now,productId:product.id,sourceType:'purchase-edit',sourceId:id,deltaBase:delta});
     await done;
@@ -134,7 +138,9 @@ export async function voidPurchase(db, id) {
     const product=await request(tx.objectStore('products').get(purchase.productId));
     if(!product||product.stockBase<purchase.quantityBase) throw new Error('موجودی فعلی برای ابطال این خرید کافی نیست؛ ابتدا موجودی و فروش‌های بعدی را بررسی کنید.');
     const now=isoNow(), stock=product.stockBase-purchase.quantityBase;
-    tx.objectStore('products').put({...product,stockBase:stock});
+    const allPurchases=await request(tx.objectStore('purchases').getAll());
+    const latest=allPurchases.filter(p=>p.productId===product.id&&p.id!==id&&p.status!=='void').sort((a,b)=>b.createdAt.localeCompare(a.createdAt))[0];
+    tx.objectStore('products').put({...product,stockBase:stock,lastBuyPrice:latest?.unitPrice??0});
     tx.objectStore('purchases').put({...purchase,status:'void',voidedAt:now});
     tx.objectStore('movements').add({id:makeId(),createdAt:now,productId:product.id,sourceType:'purchase-void',sourceId:id,deltaBase:-purchase.quantityBase});
     await done;
