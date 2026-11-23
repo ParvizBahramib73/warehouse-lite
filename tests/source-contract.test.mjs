@@ -177,6 +177,8 @@ test('visit workspace supports manual route membership, complete outcomes and in
  assert.ok(app.includes("kind==='visit'"));
  assert.ok(app.includes("routeName:formVal(form,'routeName')"));
  assert.ok(app.includes('ثبت فاکتور این مشتری'));
+ assert.ok(app.includes('route-breakdown'));
+ assert.ok(app.includes('تفکیک نتیجه‌های امروز'));
  assert.ok(app.includes("small_purchase"));
  assert.ok(app.includes("rescheduled"));
  assert.ok(app.includes("summarizeRoute(all)"));
