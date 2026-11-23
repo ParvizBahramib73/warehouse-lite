@@ -4,7 +4,7 @@ import {encryptBackup,decryptBackup,validateSnapshot,downloadBackup,readBackupFi
 import {esc,dateFa,dayFa,todayTehran,optionMarkup,formatMoneyField} from './utils.js';
 import {shareInvoiceFile,invoicePaidAmount} from './invoice-share.js';
 import {buildCustomerStatement,getCustomerFollowups} from './customer-insights.js';
-import {buildRoutePlan,groupRoutePlan,VISIT_OUTCOMES} from './route-planning.js';
+import {buildRoutePlan,groupRoutePlan,VISIT_OUTCOMES,FOLLOW_UP_OUTCOMES,summarizeRoute} from './route-planning.js';
 import {buildProfitReport} from './profit-report.js';
 
 const app=document.getElementById('app');
@@ -13,7 +13,7 @@ let currentTab='list', editor=null, statementCustomerId=null;
 const PAGE_SIZE=25;
 const listState={products:{query:'',status:'all',page:1},purchases:{query:'',page:1},suppliers:{query:'',page:1},sales:{query:'',status:'all',page:1},customers:{query:'',page:1}};
 const todayKey=todayTehran(new Date().toISOString());
-const visitState={date:todayKey,query:'',district:'all',status:'all',page:1};
+const visitState={date:todayKey,query:'',addQuery:'',district:'all',routeName:'all',status:'all',page:1};
 const profitState={from:todayKey.slice(0,8)+'01',to:todayKey,query:'',page:1};
 const visitDrafts=new Map();
 let saleState={customerId:'',paidAmount:'0',paymentMethod:'cash'};
@@ -341,46 +341,84 @@ function closeEditor(){
 function visitsPage(){
  const all=buildRoutePlan(data.customers,data.visits,visitState.date);
  const districts=[...new Set(all.map(row=>row.district||'بدون محله'))].sort((a,b)=>a.localeCompare(b,'fa'));
+ const routeNames=[...new Set(all.map(row=>row.routeName||row.district||'مسیر روزانه'))].sort((a,b)=>a.localeCompare(b,'fa'));
+ const allIds=new Set(all.map(row=>row.id));
+ const addQuery=visitState.addQuery.trim().toLocaleLowerCase('fa');
+ const routeCandidates=data.customers.filter(customer=>isActive(customer)&&!allIds.has(customer.id))
+  .filter(customer=>!addQuery||[customer.name,customer.phone,customer.district].filter(Boolean).join(' ').toLocaleLowerCase('fa').includes(addQuery))
+  .sort((a,b)=>a.name.localeCompare(b.name,'fa'));
  const q=visitState.query.trim().toLocaleLowerCase('fa');
- let filtered=all.filter(row=>!q||[row.name,row.phone,row.district].filter(Boolean).join(' ').toLocaleLowerCase('fa').includes(q));
+ let filtered=all.filter(row=>!q||[row.name,row.phone,row.district,row.routeName].filter(Boolean).join(' ').toLocaleLowerCase('fa').includes(q));
  if(visitState.district!=='all')filtered=filtered.filter(row=>(row.district||'بدون محله')===visitState.district);
+ if(visitState.routeName!=='all')filtered=filtered.filter(row=>(row.routeName||row.district||'مسیر روزانه')===visitState.routeName);
  if(visitState.status!=='all')filtered=filtered.filter(row=>row.outcome===visitState.status);
  const pages=Math.max(1,Math.ceil(filtered.length/PAGE_SIZE));visitState.page=Math.min(Math.max(1,visitState.page),pages);
  const start=(visitState.page-1)*PAGE_SIZE,rows=filtered.slice(start,start+PAGE_SIZE),groups=groupRoutePlan(rows);
- const count=outcome=>all.filter(row=>row.outcome===outcome).length;
- const pageControl=`<div class="pagination"><span>نمایش ${filtered.length?start+1:0} تا ${Math.min(start+PAGE_SIZE,filtered.length)} از ${filtered.length}</span>${pages>1?`<div class="pagination-actions"><button class="btn sm outline" type="button" data-visit-page="prev" ${start===0?'disabled':''}>قبلی</button><span>صفحه ${visitState.page} از ${pages}</span><button class="btn sm outline" type="button" data-visit-page="next" ${visitState.page>=pages?'disabled':''}>بعدی</button></div>`:''}</div>`;
- const cards=groups.map(group=>`<section class="route-group"><header><h3>${esc(group.district)}</h3><span class="tag">${group.customers.length} مشتری</span></header><div class="route-cards">${group.customers.map(customer=>{
+ const summary=summarizeRoute(all);
+ const lastVisits=new Map();
+ [...data.visits].filter(visit=>visit.plannedDate<visitState.date&&visit.outcome!=='cancelled')
+  .sort((a,b)=>b.plannedDate.localeCompare(a.plannedDate)||String(b.visitedAt||b.modifiedAt||'').localeCompare(String(a.visitedAt||a.modifiedAt||'')))
+  .forEach(visit=>{if(!lastVisits.has(visit.customerId))lastVisits.set(visit.customerId,visit);});
+ const pageControl=\`<div class="pagination"><span>نمایش \${filtered.length?start+1:0} تا \${Math.min(start+PAGE_SIZE,filtered.length)} از \${filtered.length}</span>\${pages>1?\`<div class="pagination-actions"><button class="btn sm outline" type="button" data-visit-page="prev" \${start===0?'disabled':''}>قبلی</button><span>صفحه \${visitState.page} از \${pages}</span><button class="btn sm outline" type="button" data-visit-page="next" \${visitState.page>=pages?'disabled':''}>بعدی</button></div>\`:''}</div>\`;
+ const cards=groups.map(group=>\`<section class="route-group"><header><div><h3>\${esc(group.routeName)}</h3><small class="muted">مسیر / محدوده</small></div><span class="tag">\${group.customers.length} توقف</span></header><div class="route-cards">\${group.customers.map((customer,stopIndex)=>{
   const key=visitDraftKey(customer.id,visitState.date),draft=visitDrafts.get(key)||{};
-  const outcome=draft.outcome||customer.outcome||'planned',note=draft.note??customer.note??'',nextDate=draft.nextFollowUpDate??customer.nextFollowUpDate??'';
-  return `<article class="route-customer-card"><div class="route-customer-top"><div class="item-avatar">👤</div><div class="grow"><strong>${esc(customer.name)}</strong><small>${esc(customer.district||'بدون محله')} ${customer.phone?'· '+esc(customer.phone):'· بدون شماره تماس'}</small>${customer.isFollowUp?'<span class="tag low">پیگیری زمان‌بندی‌شده</span>':''}${customer.visit?.outcome&&customer.visit.outcome!=='planned'?'<span class="tag good">نتیجه قبلی همین روز ثبت شده</span>':''}</div>${customer.phone?`<a class="btn sm outline" href="tel:${esc(customer.phone)}">تماس</a>`:''}</div>
-  ${customer.isFollowUp&&customer.followUpNote?`<p class="route-previous-note">یادداشت پیگیری قبلی: ${esc(customer.followUpNote)}</p>`:''}
-  <form data-form="visit" data-visit-form>
-   <input type="hidden" name="customerId" value="${esc(customer.id)}"/><input type="hidden" name="plannedDate" value="${esc(visitState.date)}"/>
-   <div class="field"><label>نتیجه مراجعه</label><select name="outcome" data-visit-outcome>${Object.entries(VISIT_OUTCOMES).map(([value,label])=>opt(value,label,outcome)).join('')}</select></div>
-   ${outcome==='follow_up'?`<div class="field"><label>تاریخ پیگیری بعدی *</label><input type="date" name="nextFollowUpDate" value="${esc(nextDate)}" min="${esc(visitState.date)}" required/></div>`:''}
-   <div class="field"><label>یادداشت کوتاه (اختیاری)</label><textarea name="note" rows="2" maxlength="500" placeholder="مثلاً روغن نیاز داشت؛ فردا تماس بگیر…">${esc(note)}</textarea></div>
-   <button class="btn primary full" type="submit">ذخیره نتیجه مراجعه</button>
-  </form>
-  </article>`;
- }).join('')}</div></section>`).join('');
+  const outcome=draft.outcome||customer.outcome||'planned';
+  const note=draft.note??customer.note??'';
+  const nextDate=draft.nextFollowUpDate??customer.nextFollowUpDate??'';
+  const routeName=draft.routeName??customer.routeName??customer.district??'مسیر روزانه';
+  const lastVisit=lastVisits.get(customer.id);
+  const tone=['purchased'].includes(outcome)?'good':['small_purchase','follow_up','rescheduled'].includes(outcome)?'low':['unavailable'].includes(outcome)?'red':'';
+  const needsDate=FOLLOW_UP_OUTCOMES.includes(outcome);
+  const statusLabel=VISIT_OUTCOMES[outcome]||VISIT_OUTCOMES.planned;
+  return \`<article class="route-customer-card">
+   <div class="route-customer-top"><span class="route-stop-number">\${new Intl.NumberFormat('fa-IR').format(stopIndex+1)}</span><div class="item-avatar">👤</div><div class="grow"><strong>\${esc(customer.name)}</strong><small>\${esc(customer.district||'بدون محله')} \${customer.phone?'· '+esc(customer.phone):'· بدون شماره تماس'}</small><span class="tag \${tone}">\${esc(statusLabel)}</span></div>\${customer.phone?\`<a class="btn sm outline" href="tel:\${esc(customer.phone)}">تماس</a>\`:''}</div>
+   \${lastVisit?\`<p class="route-previous-note">آخرین مراجعه: \${esc(weekdayForRoute(lastVisit.plannedDate))} · \${esc(lastVisit.plannedDate)} · \${esc(VISIT_OUTCOMES[lastVisit.outcome]||'ثبت مراجعه')}</p>\`:''}
+   \${customer.isFollowUp&&customer.followUpNote?\`<p class="route-previous-note">یادداشت پیگیری قبلی: \${esc(customer.followUpNote)}</p>\`:''}
+   <form data-form="visit" data-visit-form>
+    <input type="hidden" name="customerId" value="\${esc(customer.id)}"/><input type="hidden" name="plannedDate" value="\${esc(visitState.date)}"/>
+    <div class="field"><label>نام مسیر / محدوده</label><input name="routeName" maxlength="80" value="\${esc(routeName)}" placeholder="مثلاً مسیر کبودرآهنگ"/></div>
+    <div class="field"><label>نتیجه مراجعه</label><select name="outcome" data-visit-outcome>\${Object.entries(VISIT_OUTCOMES).filter(([value])=>value!=='cancelled').map(([value,label])=>opt(value,label,outcome)).join('')}</select></div>
+    \${needsDate?\`<div class="field"><label>\${outcome==='rescheduled'?'تاریخ مراجعه بعدی *':'تاریخ پیگیری بعدی *'}</label><input type="date" name="nextFollowUpDate" value="\${esc(nextDate)}" min="\${esc(visitState.date)}" required/></div>\`:''}
+    <div class="field"><label>یادداشت نتیجه / اقلام موردنیاز \${outcome==='other'?'*':'(اختیاری)'}</label><textarea name="note" rows="2" maxlength="500" \${outcome==='other'?'required':''} placeholder="مثلاً ۲ کارتن روغن خرید؛ برای سفارش بعدی تماس بگیر…">\${esc(note)}</textarea></div>
+    <button class="btn primary full" type="submit">\${outcome==='planned'?'ذخیره وضعیت مراجعه':'به‌روزرسانی نتیجه مراجعه'}</button>
+   </form>
+   <div class="route-card-actions">
+    \${['purchased','small_purchase'].includes(outcome)?\`<button type="button" class="btn sm soft" data-visit-sale="\${esc(customer.id)}">ثبت فاکتور این مشتری</button>\`:''}
+    \${outcome==='planned'? \`<button type="button" class="btn sm danger" data-visit-remove="\${esc(customer.id)}">حذف از برنامه این روز</button>\`:''}
+   </div>
+  </article>\`;
+ }).join('')}</div></section>\`).join('');
  const weekdayName=weekdayForRoute(visitState.date);
- return `<div class="route-page">
-  <section class="card route-toolbar-card"><div class="route-toolbar-heading"><div><h2>برنامه مسیر ویزیت</h2><p class="small muted">مشتریان بر اساس روز مراجعه و محله گروه‌بندی شده‌اند.</p></div><button class="btn sm outline" type="button" data-visit-today>امروز</button></div>
-   <div class="route-filters"><div class="field"><label>تاریخ مسیر</label><input type="date" data-visit-date value="${esc(visitState.date)}"/></div><div class="field route-search-field"><label>جستجوی مشتری</label><input type="search" data-visit-search value="${esc(visitState.query)}" placeholder="نام، تلفن یا محله…"/></div><div class="field"><label>محله</label><select data-visit-district><option value="all">همه محله‌ها</option>${districts.map(d=>opt(d,d,visitState.district)).join('')}</select></div><div class="field"><label>وضعیت مراجعه</label><select data-visit-status><option value="all">همه وضعیت‌ها</option>${Object.entries(VISIT_OUTCOMES).map(([value,label])=>opt(value,label,visitState.status)).join('')}</select></div></div>
-   <div class="route-day-caption"><strong>${weekdayName?weekdayName+' · ':''}${dateFa(visitState.date)}</strong><span>${all.length} مشتری در برنامه این روز</span></div>
+ const statusOptions=Object.entries(VISIT_OUTCOMES).filter(([value])=>value!=='cancelled');
+ return \`<div class="route-page">
+  <section class="card route-toolbar-card"><div class="route-toolbar-heading"><div><h2>برنامه مسیر و ثبت گزارش ویزیت</h2><p class="small muted">مشتریان برنامه هفتگی به‌صورت خودکار می‌آیند؛ هر مشتری دیگری را هم می‌توانی دستی به مسیر امروز اضافه کنی.</p></div><button class="btn sm outline" type="button" data-visit-today>امروز</button></div>
+   <div class="route-filters"><div class="field"><label>تاریخ مسیر</label><input type="date" data-visit-date value="\${esc(visitState.date)}"/></div><div class="field route-search-field"><label>جستجوی مشتری یا مسیر</label><input type="search" data-visit-search value="\${esc(visitState.query)}" placeholder="نام، تلفن، محله یا مسیر…"/></div><div class="field"><label>نام مسیر</label><select data-visit-route><option value="all">همه مسیرها</option>\${routeNames.map(name=>opt(name,name,visitState.routeName)).join('')}</select></div><div class="field"><label>محله</label><select data-visit-district><option value="all">همه محله‌ها</option>\${districts.map(d=>opt(d,d,visitState.district)).join('')}</select></div><div class="field"><label>وضعیت مراجعه</label><select data-visit-status><option value="all">همه وضعیت‌ها</option>\${statusOptions.map(([value,label])=>opt(value,label,visitState.status)).join('')}</select></div></div>
+   <div class="route-day-caption"><strong>\${weekdayName?weekdayName+' · ':''}\${esc(visitState.date)}</strong><span>\${all.length} مشتری در برنامه این روز</span></div>
+  </section>
+  <section class="card route-add-card"><div class="route-add-heading"><div><h3>+ افزودن مشتری به مسیر این روز</h3><p class="small muted">برای مشتریانی که امروز قرار است به آن‌ها سر بزنی، حتی اگر روز ویزیت هفتگی‌شان متفاوت است.</p></div><span class="tag">\${routeCandidates.length} مشتری قابل افزودن</span></div>
+   <form data-form="route-add" class="route-add-form">
+    <input type="hidden" name="plannedDate" value="\${esc(visitState.date)}"/>
+    <div class="field route-add-search"><label>جستجوی مشتری</label><input type="search" data-route-add-search value="\${esc(visitState.addQuery)}" placeholder="نام قنادی، شماره یا محله…"/></div>
+    <div class="field"><label>انتخاب مشتری *</label><select name="customerId" required \${!routeCandidates.length?'disabled':''}>\${optionMarkup(routeCandidates.slice(0,50),'id','name','انتخاب مشتری')}</select>\${routeCandidates.length>50?'<small class="hint">برای پیدا کردن مشتری دقیق‌تر، جستجو را محدود کنید؛ ۵۰ نتیجه اول نمایش داده شده‌اند.</small>':''}</div>
+    <div class="field"><label>نام مسیر / محدوده (اختیاری)</label><input name="routeName" maxlength="80" placeholder="مثلاً مسیر کبودرآهنگ یا مهدیه"/></div>
+    <button type="submit" class="btn primary" \${!routeCandidates.length?'disabled':''}>افزودن به برنامه</button>
+   </form>
   </section>
   <div class="grid route-stats">
-   <div class="stat"><span class="stat-label">کل برنامه</span><strong class="stat-value">${all.length} مشتری</strong></div>
-   <div class="stat"><span class="stat-label">خرید انجام شد</span><strong class="stat-value route-good">${count('purchased')}</strong></div>
-   <div class="stat"><span class="stat-label">خرید انجام نشد</span><strong class="stat-value">${count('no_purchase')}</strong></div>
-   <div class="stat"><span class="stat-label">در انتظار / پیگیری</span><strong class="stat-value route-warn">${count('planned')+count('follow_up')+count('unavailable')}</strong></div>
+   <div class="stat"><span class="stat-label">کل مشتریان مسیر</span><strong class="stat-value">\${summary.total}</strong></div>
+   <div class="stat"><span class="stat-label">مراجعه ثبت‌شده</span><strong class="stat-value route-good">\${summary.visited}</strong></div>
+   <div class="stat"><span class="stat-label">خرید کامل</span><strong class="stat-value route-good">\${summary.purchased}</strong></div>
+   <div class="stat"><span class="stat-label">خرید کم</span><strong class="stat-value route-warn">\${summary.small_purchase}</strong></div>
+   <div class="stat"><span class="stat-label">بدون خرید</span><strong class="stat-value">\${summary.no_purchase}</strong></div>
+   <div class="stat"><span class="stat-label">پیگیری بعدی</span><strong class="stat-value route-warn">\${summary.needsFollowUp}</strong></div>
+   <div class="stat"><span class="stat-label">هنوز مراجعه نشده</span><strong class="stat-value">\${summary.planned}</strong></div>
   </div>
-  <section class="card route-results-card"><div class="card-header"><div><h2>ترتیب مراجعه بر اساس محله</h2><p class="small muted">برای افزودن مشتری به روز دیگری، روز ویزیت او را در بخش مشتریان تنظیم کنید.</p></div><span class="tag">${filtered.length} نتیجه</span></div>
-   ${filtered.length?cards:empty('🧭','مشتری‌ای در این برنامه نیست','روز ویزیت مشتریان را در بخش مشتریان تعیین کنید یا فیلترها را تغییر دهید.')}
-   ${filtered.length?pageControl:''}
+  <section class="card route-results-card"><div class="card-header"><div><h2>گزارش مراجعات و توقف‌ها</h2><p class="small muted">وضعیت هر مشتری را همان‌جا ثبت کن؛ سوابق برای تاریخ‌های بعد هم حفظ می‌شوند.</p></div><span class="tag">\${filtered.length} نتیجه</span></div>
+   \${filtered.length?cards:empty('🧭','مشتری‌ای در این برنامه نیست','از فرم افزودن مشتری استفاده کن یا فیلترها و روز ویزیت هفتگی مشتریان را بررسی کن.')}
+   \${filtered.length?pageControl:''}
   </section>
-  <div class="inline-note warning">ثبت نتیجه مراجعه، فقط سابقه ویزیت را ذخیره می‌کند و به‌تنهایی فاکتور فروش یا دریافت وجه ایجاد نمی‌کند. برای ثبت مبلغ فروش یا تسویه، از بخش فروش و حساب مشتری استفاده کنید.</div>
- </div>`;
+  <div class="inline-note warning">ثبت نتیجه ویزیت به‌تنهایی فاکتور یا دریافت وجه ایجاد نمی‌کند. اگر مشتری خرید کرد، از دکمه «ثبت فاکتور این مشتری» استفاده کن تا فروش در حسابداری هم ثبت شود.</div>
+ </div>\`;
 }
 function weekdayForRoute(date){
  const parts=String(date||'').split('-').map(Number);
