@@ -515,6 +515,21 @@ async function makeDemo(){if(data.products.length||data.customers.length||data.s
 }
 
 app.addEventListener('click',async(event)=>{
+ const removeVisit=event.target.closest('[data-visit-remove]');if(removeVisit){
+  const customer=data.customers.find(row=>row.id===removeVisit.dataset.visitRemove);
+  if(!confirm(`«${customer?.name||'این مشتری'}» از برنامه این روز حذف شود؟ سابقه مراجعه روزهای دیگر باقی می‌ماند.`))return;
+  try{
+   await saveVisit(db,{customerId:removeVisit.dataset.visitRemove,plannedDate:visitState.date,outcome:'cancelled',routeName:customer?.district||'مسیر روزانه'});
+   visitDrafts.delete(visitDraftKey(removeVisit.dataset.visitRemove,visitState.date));
+   await refresh();notify('مشتری از برنامه این روز حذف شد.');
+  }catch(error){notify(error.message||'حذف از برنامه انجام نشد.','error');}
+  return;
+ }
+ const visitSale=event.target.closest('[data-visit-sale]');if(visitSale){
+  saleRows=[{productId:'',unit:'',quantity:'1',unitPrice:''}];
+  saleState={customerId:visitSale.dataset.visitSale,paidAmount:'0',paymentMethod:'cash'};
+  setPage('sales');updateSaleTotal($('#sale-form'));$('#sale-form [data-sale-product]')?.focus();return;
+ }
  const listPageButton=event.target.closest('[data-list-page]');if(listPageButton){const key=listPageButton.dataset.listKey,state=listState[key];if(state){state.page=Math.max(1,state.page+(listPageButton.dataset.direction==='next'?1:-1));render();}return;}
  const visitPageButton=event.target.closest('[data-visit-page]');if(visitPageButton){visitState.page=Math.max(1,visitState.page+(visitPageButton.dataset.visitPage==='next'?1:-1));render();return;}
  const profitPageButton=event.target.closest('[data-profit-page]');if(profitPageButton){profitState.page=Math.max(1,profitState.page+(profitPageButton.dataset.profitPage==='next'?1:-1));render();return;}
@@ -598,6 +613,7 @@ app.addEventListener('change',event=>{
  }
  if(event.target.matches('[data-visit-date]')){visitState.date=event.target.value||todayKey;visitState.page=1;render();return;}
  if(event.target.matches('[data-visit-district]')){visitState.district=event.target.value;visitState.page=1;render();return;}
+ if(event.target.matches('[data-visit-route]')){visitState.routeName=event.target.value;visitState.page=1;render();return;}
  if(event.target.matches('[data-visit-status]')){visitState.status=event.target.value;visitState.page=1;render();return;}
  if(event.target.matches('[data-profit-from]')){profitState.from=event.target.value;profitState.page=1;render();return;}
  if(event.target.matches('[data-profit-to]')){profitState.to=event.target.value;profitState.page=1;render();return;}
@@ -620,6 +636,9 @@ app.addEventListener('input',event=>{
  if(event.target.matches('[data-list-search]')){
   const key=event.target.dataset.listSearch,caret=event.target.selectionStart??event.target.value.length;
   if(listState[key]){listState[key].query=event.target.value;listState[key].page=1;renderSearchAgain('[data-list-search="'+key+'"]',caret);}return;
+ }
+ if(event.target.matches('[data-route-add-search]')){
+  const caret=event.target.selectionStart??event.target.value.length;visitState.addQuery=event.target.value;renderSearchAgain('[data-route-add-search]',caret);return;
  }
  if(event.target.matches('[data-visit-search]')){
   const caret=event.target.selectionStart??event.target.value.length;visitState.query=event.target.value;visitState.page=1;renderSearchAgain('[data-visit-search]',caret);return;
@@ -657,8 +676,13 @@ app.addEventListener('submit',async(event)=>{
   else if(kind==='payment'){await addPayment(db,{customerId:formVal(form,'customerId'),amount:formVal(form,'amount'),method:formVal(form,'method'),note:formVal(form,'note')});}
   else if(kind==='visit'){
    const customerId=formVal(form,'customerId'),plannedDate=formVal(form,'plannedDate');
-   await saveVisit(db,{customerId,plannedDate,outcome:formVal(form,'outcome'),note:formVal(form,'note'),nextFollowUpDate:formVal(form,'nextFollowUpDate')});
+   await saveVisit(db,{customerId,plannedDate,outcome:formVal(form,'outcome'),note:formVal(form,'note'),nextFollowUpDate:formVal(form,'nextFollowUpDate'),routeName:formVal(form,'routeName')});
    visitDrafts.delete(visitDraftKey(customerId,plannedDate));
+  }
+  else if(kind==='route-add'){
+   const customerId=formVal(form,'customerId'),plannedDate=formVal(form,'plannedDate');
+   await saveVisit(db,{customerId,plannedDate,outcome:'planned',routeName:formVal(form,'routeName')});
+   visitState.addQuery='';visitState.query='';visitState.district='all';visitState.routeName='all';visitState.status='all';visitState.page=1;
   }
   else if(kind==='edit-product'){
    const row=data.products.find(x=>x.id===formVal(form,'id'));if(!row)throw new Error('کالا پیدا نشد.');
@@ -692,7 +716,7 @@ app.addEventListener('submit',async(event)=>{
    render();notify('فایل بررسی شد و هنوز هیچ اطلاعاتی تغییر نکرده است.');return;
   }
   if(kind.startsWith('edit-')){const wasSale=editor?.type==='sale';editor=null;if(wasSale){saleRows=[{productId:'',unit:'',quantity:'1',unitPrice:''}];saleState={customerId:'',paidAmount:'0',paymentMethod:'cash'};}}
-  await refresh();if(kind==='sale'){updateSaleTotal($('#sale-form'));$('#sale-form [name="customerId"]')?.focus();}notify(kind==='visit'?'نتیجه مراجعه ذخیره شد.':kind.startsWith('edit-')?'تغییرات با موفقیت ذخیره شد.':'عملیات با موفقیت ثبت شد.');
+  await refresh();if(kind==='sale'){updateSaleTotal($('#sale-form'));$('#sale-form [name="customerId"]')?.focus();}notify(kind==='visit'?'نتیجه مراجعه ذخیره شد.':kind==='route-add'?'مشتری به مسیر این روز اضافه شد.':kind.startsWith('edit-')?'تغییرات با موفقیت ذخیره شد.':'عملیات با موفقیت ثبت شد.');
  }catch(e){if(kind==='import'){importCandidate=null;importWrapper=null;render();}notify(e.message||'در ثبت اطلاعات خطایی رخ داد.','error');}
  finally{if(submitButton&&submitButton.isConnected)submitButton.disabled=false;}
 });
