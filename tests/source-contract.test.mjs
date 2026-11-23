@@ -70,3 +70,13 @@ test('invoice share module is included in offline shell and app exposes share co
  assert.ok(share.includes('navigator.share({files:[file]'));
  assert.ok(share.includes('علی‌فاکتور'));
 });
+
+test('creator credit says built for Ali and all monetary fields use grouped formatting',()=>{
+ const app=read('src/app.js');
+ const utils=read('src/utils.js');
+ assert.ok(app.includes('ساخته‌شده برای داداش علی'));
+ assert.ok((app.match(/data-money-input/g)||[]).length>=8);
+ assert.ok(app.includes('formatMoneyField(event.target)'));
+ assert.ok(app.includes("app.querySelectorAll('[data-money-input]')"));
+ assert.ok(utils.includes('formatGroupedInteger'));
+});
