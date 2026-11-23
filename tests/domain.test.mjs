@@ -35,9 +35,13 @@ test('customer balance tracks sales minus settled payments',()=>{
 });
 test('encrypt/decrypt roundtrip and rejects wrong password and tampering',async()=>{
  assert.ok(validateSnapshot(snap));
+ assert.equal(validateSnapshot(snap).visits,0);
  const wrapper=await encryptBackup(snap,'passphrase-long');
  assert.equal(wrapper.format,'warehouse-lite-encrypted');
- assert.deepEqual((await decryptBackup(wrapper,'passphrase-long')).products,snap.products);
+ const restored=await decryptBackup(wrapper,'passphrase-long');
+ assert.deepEqual(restored.products,snap.products);
+ assert.equal(restored.schemaVersion,2);
+ assert.deepEqual(restored.visits,[]);
  await assert.rejects(()=>decryptBackup(wrapper,'bad-password'));
  const modified={...wrapper,ciphertext:wrapper.ciphertext.slice(0,-4)+'AAAA'};
  await assert.rejects(()=>decryptBackup(modified,'passphrase-long'));
@@ -83,4 +87,12 @@ test('backup stock reconciliation accepts edit and void reversal movements',()=>
 test('displayed Toman amounts use Persian three-digit grouping',()=>{
  assert.equal(money(3000000),'۳٬۰۰۰٬۰۰۰ تومان');
  assert.equal(money(125000),'۱۲۵٬۰۰۰ تومان');
+});
+
+test('version 2 backup validates visit history and keeps legacy version 1 compatible',()=>{
+ const legacy={...snap,schemaVersion:1};
+ assert.equal(validateSnapshot(legacy).visits,0);
+ const upgraded={...snap,schemaVersion:2,visits:[{id:'v1',customerId:'c1',plannedDate:'2026-11-23',outcome:'purchased',note:'خرید ثبت شد',nextFollowUpDate:''}]};
+ assert.equal(validateSnapshot(upgraded).visits,1);
+ assert.throws(()=>validateSnapshot({...upgraded,visits:[{...upgraded.visits[0],customerId:'missing'}]}),/مراجعه نامعتبر/);
 });
