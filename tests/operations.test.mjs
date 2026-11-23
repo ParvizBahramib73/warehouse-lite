@@ -63,6 +63,7 @@ test('route planner groups scheduled customers by Persian weekday and includes d
  const rows=buildRoutePlan(customers,visits,'2026-11-23');
  assert.deepEqual(rows.map(x=>x.id),['c2','c1']);
  assert.equal(rows.find(x=>x.id==='c2').isFollowUp,true);
+ assert.equal(summarizeRoute(rows).needsFollowUp,1);
  assert.equal(rows.find(x=>x.id==='c1').outcome,'planned');
  const groups=groupRoutePlan(rows);
  assert.deepEqual(groups.map(x=>x.routeName),['بوعلی','مهدیه']);
