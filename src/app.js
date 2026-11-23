@@ -398,6 +398,8 @@ function profitPage(){
  const start=(profitState.page-1)*PAGE_SIZE,rows=filtered.slice(start,start+PAGE_SIZE);
  const pageControl=`<div class="pagination"><span>نمایش ${filtered.length?start+1:0} تا ${Math.min(start+PAGE_SIZE,filtered.length)} از ${filtered.length}</span>${pages>1?`<div class="pagination-actions"><button class="btn sm outline" type="button" data-profit-page="prev" ${start===0?'disabled':''}>قبلی</button><span>صفحه ${profitState.page} از ${pages}</span><button class="btn sm outline" type="button" data-profit-page="next" ${profitState.page>=pages?'disabled':''}>بعدی</button></div>`:''}</div>`;
  const margin=report?.marginPercent===null||report?.marginPercent===undefined?'—':new Intl.NumberFormat('fa-IR',{maximumFractionDigits:1}).format(report.marginPercent)+'٪';
+ const profitValue=report?.salesCount>0&&report.coveredSales===0?'قابل محاسبه نیست':money(report?.grossProfit||0);
+ const costValue=report?.coveredSales?money(report.costOfGoods):'—';
  return `<div class="profit-page">
   <section class="card profit-filter-card"><div class="profit-filter-heading"><div><h2>گزارش سود و فروش</h2><p class="small muted">بازه زمانی را انتخاب کنید؛ فاکتورهای باطل‌شده در گزارش نیستند.</p></div><span class="tag">برآورد سود ناخالص</span></div>
    <div class="profit-filters"><div class="field"><label>از تاریخ</label><input type="date" data-profit-from value="${esc(profitState.from)}"/></div><div class="field"><label>تا تاریخ</label><input type="date" data-profit-to value="${esc(profitState.to)}"/></div><div class="field profit-search-field"><label>جستجوی فاکتور یا مشتری</label><input type="search" data-profit-search value="${esc(profitState.query)}" placeholder="شماره فاکتور یا نام مشتری…"/></div></div>
@@ -405,8 +407,8 @@ function profitPage(){
   ${invalidRange?'<div class="inline-note warning">تاریخ شروع باید قبل از تاریخ پایان باشد.</div>':`
   <div class="grid profit-stats">
    <div class="stat"><span class="stat-label">فروش ثبت‌شده</span><strong class="stat-value">${money(report.revenue)}</strong><small class="muted">${report.salesCount} فاکتور فعال</small></div>
-   <div class="stat"><span class="stat-label">بهای خرید قابل محاسبه</span><strong class="stat-value">${money(report.costOfGoods)}</strong><small class="muted">${report.coveredSales} فاکتور با بهای کامل</small></div>
-   <div class="stat profit-highlight"><span class="stat-label">سود ناخالص برآوردی</span><strong class="stat-value">${money(report.grossProfit)}</strong><small class="muted">حاشیه سود ${margin}</small></div>
+   <div class="stat"><span class="stat-label">بهای خرید فاکتورهای قابل محاسبه</span><strong class="stat-value">${costValue}</strong><small class="muted">${report.coveredSales} فاکتور با بهای کامل</small></div>
+   <div class="stat profit-highlight"><span class="stat-label">سود ناخالص فاکتورهای قابل محاسبه</span><strong class="stat-value">${profitValue}</strong><small class="muted">حاشیه سود ${margin}</small></div>
    <div class="stat"><span class="stat-label">فاکتور با بهای نامشخص</span><strong class="stat-value">${report.unknownSales}</strong><small class="muted">${money(report.unknownRevenue)} فروش بدون بهای کامل</small></div>
   </div>
   <section class="card profit-table-card"><div class="card-header"><div><h2>سود هر فاکتور</h2><p class="small muted">${report.snapshotSales} فاکتور با بهای ثبت‌شده · ${report.estimatedSales} فاکتور با بهای تاریخی بازسازی‌شده</p></div><span class="tag">${filtered.length} نتیجه</span></div>
