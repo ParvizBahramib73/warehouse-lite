@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {normalizeDigits,asDecimalMilli,asInteger,parseBaseQuantity,lineTotal,validateSaleLines,customerBalance} from '../src/domain.js';
+import {normalizeDigits,asDecimalMilli,asInteger,parseBaseQuantity,lineTotal,validateSaleLines,customerBalance,money} from '../src/domain.js';
 import {encryptBackup,decryptBackup,validateSnapshot} from '../src/backup.js';
 
 const kg={id:'p1',name:'بادکا',kind:'gram',packBase:5000,stockBase:15000,lowBase:2000,salePrice:120000};
@@ -78,4 +78,9 @@ test('backup stock reconciliation accepts edit and void reversal movements',()=>
   ]
  };
  assert.ok(validateSnapshot(snapshot));
+});
+
+test('displayed Toman amounts use Persian three-digit grouping',()=>{
+ assert.equal(money(3000000),'۳٬۰۰۰٬۰۰۰ تومان');
+ assert.equal(money(125000),'۱۲۵٬۰۰۰ تومان');
 });
