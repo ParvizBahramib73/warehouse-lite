@@ -14,3 +14,31 @@ export function optionMarkup(items,key,label,placeholder='انتخاب کنید'
     return `<option value="${esc(value)}" ${isSelected}>${esc(item[label])}</option>`;
   }).join('')}`;
 }
+
+const faDigits='۰۱۲۳۴۵۶۷۸۹';
+export function formatGroupedInteger(value){
+ const digits=String(value??'')
+  .replace(/[۰-۹]/g,c=>String('۰۱۲۳۴۵۶۷۸۹'.indexOf(c)))
+  .replace(/[٠-٩]/g,c=>String('٠١٢٣٤٥٦٧٨٩'.indexOf(c)))
+  .replace(/[٬,\s]/g,'')
+  .replace(/[^0-9]/g,'');
+ if(!digits)return '';
+ return digits.replace(/\B(?=(\d{3})+(?!\d))/g,'٬').replace(/\d/g,d=>faDigits[Number(d)]);
+}
+export function formatMoneyField(input){
+ if(!input)return;
+ const before=String(input.value??'');
+ const caret=typeof input.selectionStart==='number'?input.selectionStart:before.length;
+ const prefixDigits=(before.slice(0,caret).match(/[0-9۰-۹٠-٩]/g)||[]).length;
+ const formatted=formatGroupedInteger(before);
+ if(before===formatted)return;
+ input.value=formatted;
+ if(typeof input.setSelectionRange==='function'){
+  let position=0,seen=0;
+  while(position<formatted.length&&seen<prefixDigits){
+   if(/[0-9۰-۹٠-٩]/.test(formatted[position]))seen++;
+   position++;
+  }
+  input.setSelectionRange(position,position);
+ }
+}
