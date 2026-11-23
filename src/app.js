@@ -1,22 +1,49 @@
-import {openDb,readAll,addRecord,updateRecord,setRecordActive,deleteRecord,addPurchase,updatePurchase,voidPurchase,addSale,updateSale,voidSale,addPayment,updatePayment,voidPayment,replaceAll} from './data.js';
+import {openDb,readAll,addRecord,updateRecord,setRecordActive,deleteRecord,addPurchase,updatePurchase,voidPurchase,addSale,updateSale,voidSale,addPayment,updatePayment,voidPayment,saveVisit,replaceAll} from './data.js';
 import {asInteger,asDecimalMilli,money,stockLabel,defaultUnitPrice,validateSaleLines,customerBalance,makeId,isoNow} from './domain.js';
 import {encryptBackup,decryptBackup,validateSnapshot,downloadBackup,readBackupFile} from './backup.js';
 import {esc,dateFa,dayFa,todayTehran,optionMarkup,formatMoneyField} from './utils.js';
 import {shareInvoiceFile,invoicePaidAmount} from './invoice-share.js';
 import {buildCustomerStatement,getCustomerFollowups} from './customer-insights.js';
+import {buildRoutePlan,groupRoutePlan,VISIT_OUTCOMES} from './route-planning.js';
+import {buildProfitReport} from './profit-report.js';
 
 const app=document.getElementById('app');
 let db, data, page='dashboard', toastTimer, importCandidate=null, importWrapper=null, saleRows=[{productId:'',unit:'',quantity:'1',unitPrice:''}];
 let currentTab='list', editor=null, statementCustomerId=null;
+const PAGE_SIZE=25;
+const listState={products:{query:'',status:'all',page:1},purchases:{query:'',page:1},sales:{query:'',status:'all',page:1},customers:{query:'',page:1}};
+const todayKey=todayTehran(new Date().toISOString());
+const visitState={date:todayKey,query:'',district:'all',status:'all',page:1};
+const profitState={from:todayKey.slice(0,8)+'01',to:todayKey,query:'',page:1};
+const visitDrafts=new Map();
 let saleState={customerId:'',paidAmount:'0',paymentMethod:'cash'};
-const tabs=[['dashboard','خانه','⌂'],['products','کالاها','▦'],['purchases','خرید','↓'],['sales','فروش','↑'],['customers','مشتریان','♙'],['backup','تنظیمات','⚙']];
+const tabs=[['dashboard','خانه','⌂'],['products','کالاها','▦'],['purchases','خرید','↓'],['sales','فروش','↑'],['customers','مشتریان','♙'],['visits','ویزیت','🧭'],['profit','سود','٪'],['backup','تنظیمات','⚙']];
 const weekday=['یکشنبه','دوشنبه','سه‌شنبه','چهارشنبه','پنجشنبه','جمعه','شنبه'];
-const titleMap={dashboard:'داشبورد',products:'مدیریت کالاها',purchases:'ثبت خرید',sales:'ثبت فروش و فاکتور',customers:'مشتریان و حساب‌ها',backup:'پشتیبان‌گیری'};
-const subtitleMap={dashboard:'خلاصه وضعیت امروز کسب‌وکار شما',products:'کالا، واحد، قیمت و موجودی را مدیریت کنید',purchases:'ورود کالا از تأمین‌کننده به انبار',sales:'فاکتور صادر کنید و موجودی را به‌روز نگه دارید',customers:'حساب و سوابق فروش مشتریان را ببینید',backup:'خروجی امن و بازگرداندن اطلاعات روی دستگاه'};
+const titleMap={dashboard:'داشبورد',products:'مدیریت کالاها',purchases:'ثبت خرید',sales:'ثبت فروش و فاکتور',customers:'مشتریان و حساب‌ها',visits:'مسیر ویزیت مشتریان',profit:'گزارش سود ناخالص',backup:'پشتیبان‌گیری'};
+const subtitleMap={dashboard:'خلاصه وضعیت امروز کسب‌وکار شما',products:'کالا، واحد، قیمت و موجودی را مدیریت کنید',purchases:'ورود کالا از تأمین‌کننده به انبار',sales:'فاکتور صادر کنید و موجودی را به‌روز نگه دارید',customers:'حساب و سوابق فروش مشتریان را ببینید',visits:'برنامه روزانه، محله‌بندی و ثبت نتیجه مراجعه',profit:'درآمد، بهای خرید و سود ناخالص برآوردی',backup:'خروجی امن و بازگرداندن اطلاعات روی دستگاه'};
 const $=(selector,root=document)=>root.querySelector(selector);
 const formatDate=()=>new Intl.DateTimeFormat('fa-IR',{weekday:'long',day:'numeric',month:'long',year:'numeric',timeZone:'Asia/Tehran'}).format(new Date());
 const opt=(v,label,selected)=>`<option value="${esc(v)}" ${v===selected?'selected':''}>${esc(label)}</option>`;
 const formVal=(form,name)=>String(new FormData(form).get(name)??'').trim();
+
+const listPage=(rows,state)=>{
+ const pages=Math.max(1,Math.ceil(rows.length/PAGE_SIZE));
+ state.page=Math.min(Math.max(1,state.page),pages);
+ const start=(state.page-1)*PAGE_SIZE;
+ return {rows:rows.slice(start,start+PAGE_SIZE),pages,start,total:rows.length};
+};
+const listSearch=(key,placeholder)=>`<label class="list-search"><span aria-hidden="true">⌕</span><input type="search" data-list-search="${key}" value="${esc(listState[key].query)}" placeholder="${placeholder}" aria-label="${placeholder}" autocomplete="off"/></label>`;
+const pager=(key,view)=>`<div class="pagination"><span>نمایش ${view.total?view.start+1:0} تا ${Math.min(view.start+PAGE_SIZE,view.total)} از ${view.total}</span>${view.pages>1?`<div class="pagination-actions"><button type="button" class="btn sm outline" data-list-page data-list-key="${key}" data-direction="prev" ${view.start===0?'disabled':''}>قبلی</button><span>صفحه ${listState[key].page} از ${view.pages}</span><button type="button" class="btn sm outline" data-list-page data-list-key="${key}" data-direction="next" ${listState[key].page>=view.pages?'disabled':''}>بعدی</button></div>`:''}</div>`;
+function renderSearchAgain(selector,caret){
+ render();const input=app.querySelector(selector);if(input){input.focus();if(typeof input.setSelectionRange==='function')input.setSelectionRange(caret,caret);}
+}
+function visitDraftKey(customerId,date){return customerId+'|'+date;}
+function rememberVisitDraft(form){
+ const values=new FormData(form),customerId=String(values.get('customerId')||''),date=String(values.get('plannedDate')||'');
+ if(!customerId||!date)return;
+ visitDrafts.set(visitDraftKey(customerId,date),{outcome:String(values.get('outcome')||'planned'),note:String(values.get('note')||''),nextFollowUpDate:String(values.get('nextFollowUpDate')||'')});
+}
+
 const stockTone=p=>p.stockBase<=p.lowBase?'low':'good';
 const productUnits=p=>{if(!p)return[];const u=p.kind==='gram'?[['kg','کیلوگرم']]:[['piece','عدد']];if(p.packBase>1)u.push(['pack','بسته']);return u;};
 
@@ -37,11 +64,11 @@ function render(){
     <aside class="sidebar">
       <div class="logo"><div class="logo-mark" aria-hidden="true">◈</div><div><strong>انبار من</strong><span>Warehouse Lite</span></div></div>
       <nav class="nav-list" aria-label="بخش‌های برنامه">${tabs.map(([id,label,icon])=>`<button type="button" data-nav="${id}" class="nav ${id===page?'active':''}" ${id===page?'aria-current="page"':''}><span class="nav-icon" aria-hidden="true">${icon}</span>${label}</button>`).join('')}</nav>
-      <div class="side-footer"><strong>نسخه آزمایشی ۰.۱.۶</strong><br/>اطلاعات فقط روی همین دستگاه ذخیره می‌شوند. هر روز پشتیبان تهیه کنید.</div>
+      <div class="side-footer"><strong>نسخه آزمایشی ۰.۱.۷</strong><br/>اطلاعات فقط روی همین دستگاه ذخیره می‌شوند. هر روز پشتیبان تهیه کنید.</div>
     </aside>
     <main class="main">
       <header class="topbar"><div class="topbar-heading"><div class="topbar-mobile-brand"><span class="logo-mark" aria-hidden="true">◈</span><strong>انبار من</strong></div><div><h1>${titleMap[page]}</h1><div class="top-sub">${subtitleMap[page]}</div></div></div><div class="top-right"><span class="pill ${online?'ok':'offline'}" id="net-status">${online?'● آماده کار آفلاین':'● بدون اینترنت'}</span><span class="date">${formatDate()}</span></div></header>
-      <div class="page-content">${page==='dashboard'?dashboard():page==='products'?productsPage():page==='purchases'?purchasesPage():page==='sales'?salesPage():page==='customers'?customersPage():backupPage()}</div>
+      <div class="page-content">${page==='dashboard'?dashboard():page==='products'?productsPage():page==='purchases'?purchasesPage():page==='sales'?salesPage():page==='customers'?customersPage():page==='visits'?visitsPage():page==='profit'?profitPage():backupPage()}</div>
       <footer class="app-footer">
         <span>ساخته‌شده برای داداش علی</span>
         <span>طراحی و توسعه:
@@ -49,7 +76,7 @@ function render(){
         </span>
       </footer>
     </main>
-    <nav class="mobile-nav" aria-label="ناوبری موبایل">${[['dashboard','خانه','⌂'],['products','کالا','▦'],['purchases','خرید','↓'],['sales','فروش','↑'],['customers','مشتریان','♙'],['backup','پشتیبان','⚙']].map(([id,l,i])=>`<button type="button" class="mob ${id===page?'active':''}" data-nav="${id}" ${id===page?'aria-current="page"':''}><span aria-hidden="true">${i}</span>${l}</button>`).join('')}</nav>
+    <nav class="mobile-nav" aria-label="ناوبری موبایل">${[['dashboard','خانه','⌂'],['products','کالا','▦'],['purchases','خرید','↓'],['sales','فروش','↑'],['customers','مشتری','♙'],['visits','ویزیت','🧭'],['profit','سود','٪'],['backup','تنظیمات','⚙']].map(([id,l,i])=>`<button type="button" class="mob ${id===page?'active':''}" data-nav="${id}" ${id===page?'aria-current="page"':''}><span aria-hidden="true">${i}</span>${l}</button>`).join('')}</nav>
   </div>${editorModal()}${customerStatementModal()}`;
   app.querySelectorAll('[data-money-input]').forEach(formatMoneyField);
 }
