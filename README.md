@@ -36,3 +36,7 @@ Open `http://localhost:8765/` in a modern browser.
 ## Data safety
 
 Never commit customer, supplier, invoice, payment, or `.wlbackup` files. No real business data belongs in this public repository. No reuse license is granted by this repository unless a LICENSE file is added later.
+
+## Deployment
+
+GitHub Pages is configured to deploy from the `GitHub Actions` workflow after the repository Pages source is enabled. The deployment workflow runs the quality checks and builds `dist/` before publishing.
