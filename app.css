@@ -60,3 +60,7 @@
 /* AliFactor invoice sharing */
 .invoice-share-note{margin-top:12px;padding:11px 13px;border-radius:11px;background:#eef8f3;color:#3e6d5d;font-size:.78rem;line-height:1.9}
 @media(max-width:760px){.record-actions [data-share-invoice]{flex:1 1 100%}}
+
+/* Readable Toman inputs: grouped digits, stable LTR numeric alignment */
+input[data-money-input]{direction:ltr;text-align:left;font-variant-numeric:tabular-nums;letter-spacing:.01em}
+input[data-money-input]::placeholder{direction:rtl;text-align:right}
