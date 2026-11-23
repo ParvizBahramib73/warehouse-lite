@@ -90,3 +90,18 @@ test('every monetary input including edit dialogs is wired to the formatter',()=
  assert.ok(app.includes("app.addEventListener('focusout'"));
  assert.ok(app.includes("app.addEventListener('change'"));
 });
+
+test('responsive app shell includes page-specific layout and mobile brand',()=>{
+ const app=read('src/app.js');const css=read('app.css');
+ assert.ok(app.includes('class="layout page-${page}"'));
+ assert.ok(app.includes('topbar-mobile-brand'));
+ assert.ok(app.includes('class="page-content"'));
+ assert.ok(app.includes('class="sale-checkout"'));
+ assert.ok(css.includes('@media(max-width:760px)'));
+ assert.ok(css.includes('env(safe-area-inset-bottom)'));
+ assert.ok(css.includes('.sale-checkout{position:sticky'));
+});
+test('responsive UX styles cover dashboard, lists, forms, dialogs and navigation',()=>{
+ const css=read('app.css');
+ for(const token of ['.welcome-card','.stat{','.quick{','.data-table','.line-form','.list-row','.modal-card','.mobile-nav','.app-footer'])assert.ok(css.includes(token),token);
+});
