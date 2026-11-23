@@ -252,3 +252,97 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
  .statement-stats{grid-template-columns:1fr}
  .customer-actions>.record-actions{flex-wrap:wrap}
 }
+
+/* Warehouse Lite 0.1.7 — scalable route, visit and profit workspaces */
+.nav-list{min-height:0;overflow-y:auto;overscroll-behavior:contain;padding-inline:2px}
+.list-toolbar{display:flex;align-items:center;gap:10px;margin:0 0 14px}
+.list-search{display:flex;align-items:center;gap:8px;min-width:0;flex:1;padding:0 12px;border:1px solid #dfe9e4;border-radius:13px;background:#fbfdfc;color:#7b8c85}
+.list-search>span{font-size:1.2rem;line-height:1}
+.list-search input{width:100%;min-width:0;min-height:44px;border:0!important;outline:0!important;box-shadow:none!important;background:transparent!important;font:inherit;font-size:.82rem;color:var(--ink);padding:8px 0}
+.list-search:focus-within{border-color:#27a286;box-shadow:var(--focus);background:#fff}
+.toolbar-select{min-height:44px;max-width:180px;padding:8px 12px;border:1px solid #dfe9e4;border-radius:12px;background:#fff;color:var(--ink);font:inherit;font-size:.78rem}
+.pagination{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:16px;padding-top:13px;border-top:1px solid #edf2ef;color:var(--muted);font-size:.73rem}
+.pagination-actions{display:flex;align-items:center;gap:8px}
+.pagination-actions>span{white-space:nowrap;font-variant-numeric:tabular-nums}
+.pagination .btn{min-height:34px}
+.route-page,.profit-page{display:grid;gap:16px}
+.route-toolbar-card,.profit-filter-card{padding:21px}
+.route-toolbar-heading,.profit-filter-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:15px;margin-bottom:16px}
+.route-toolbar-heading h2,.profit-filter-heading h2{font-size:1.05rem}
+.route-toolbar-heading p,.profit-filter-heading p{margin:5px 0 0}
+.route-filters,.profit-filters{display:grid;grid-template-columns:160px minmax(220px,1.4fr) minmax(160px,.8fr) minmax(170px,.9fr);gap:12px;align-items:end}
+.profit-filters{grid-template-columns:170px 170px minmax(240px,1fr)}
+.route-filters .field input,.route-filters .field select,.profit-filters .field input{min-height:45px}
+.route-day-caption{display:flex;justify-content:space-between;gap:10px;margin-top:15px;padding-top:13px;border-top:1px solid #edf2ef;color:var(--muted);font-size:.76rem}
+.route-day-caption strong{color:#275b4c}
+.route-stats,.profit-stats{grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.route-stats .stat,.profit-stats .stat{padding:16px 17px;border-radius:16px}
+.route-stats .stat-value,.profit-stats .stat-value{font-size:1.05rem}
+.route-good{color:#11856f!important}
+.route-warn{color:#b77a2d!important}
+.route-results-card{min-width:0}
+.route-group{margin-top:15px}
+.route-group>header{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 2px 9px;border-bottom:1px solid #eaf0ed}
+.route-group>header h3{font-size:.9rem;font-weight:850;color:#36564c;margin:0}
+.route-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:11px}
+.route-customer-card{min-width:0;padding:15px;border:1px solid #e6eeea;border-radius:16px;background:linear-gradient(180deg,#fff,#fbfdfc)}
+.route-customer-top{display:flex;align-items:center;gap:10px;margin-bottom:13px}
+.route-customer-top .grow{min-width:0}
+.route-customer-top .grow strong{display:block;font-size:.88rem;overflow-wrap:anywhere}
+.route-customer-top .grow small{display:block;color:var(--muted);font-size:.72rem;margin-top:4px}
+.route-previous-note{margin:-3px 0 11px;padding:8px 10px;border-radius:10px;background:#fff8e9;color:#8c6b36;font-size:.72rem;line-height:1.8}
+.route-customer-card form{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:9px}
+.route-customer-card form .field{min-width:0}
+.route-customer-card form .field:first-child,.route-customer-card form .field:has(textarea),.route-customer-card form .btn{grid-column:1/-1}
+.route-customer-card form .field label{font-size:.72rem}
+.route-customer-card form .field select,.route-customer-card form .field input,.route-customer-card form .field textarea{min-height:42px;padding:9px 11px;font-size:.82rem;border-radius:11px}
+.route-customer-card form .btn{min-height:43px}
+.profit-highlight{background:linear-gradient(145deg,#effaf4,#e5f5ec)!important;border-color:#d1ebdc!important}
+.profit-highlight .stat-value{color:#087a60}
+.profit-table-card .card-header p{margin:4px 0 0}
+.profit-table{min-width:860px}
+.profit-table td{vertical-align:middle}
+.profit-table .name-cell small{direction:ltr;text-align:right}
+.profit-table .tag{white-space:normal;line-height:1.6}
+@media(max-width:1180px){
+ .route-filters{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .route-cards{grid-template-columns:minmax(0,1fr)}
+ .profit-filters{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .profit-search-field{grid-column:1/-1}
+}
+@media(max-width:760px){
+ .list-toolbar{align-items:stretch;flex-direction:column}
+ .toolbar-select{max-width:none;width:100%}
+ .pagination{align-items:flex-start;flex-direction:column;gap:9px}
+ .pagination-actions{width:100%;justify-content:space-between}
+ .route-page,.profit-page{gap:12px}
+ .route-toolbar-card,.profit-filter-card{padding:15px 13px}
+ .route-toolbar-heading,.profit-filter-heading{align-items:center}
+ .route-toolbar-heading h2,.profit-filter-heading h2{font-size:.95rem}
+ .route-filters,.profit-filters{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+ .route-filters .field label,.profit-filters .field label{font-size:.7rem}
+ .route-filters .field input,.route-filters .field select,.profit-filters .field input{min-height:43px;font-size:16px;padding:9px}
+ .route-filters .route-search-field,.profit-filters .profit-search-field{grid-column:1/-1}
+ .route-day-caption{font-size:.7rem}
+ .route-stats,.profit-stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+ .route-stats .stat,.profit-stats .stat{padding:13px 12px}
+ .route-stats .stat-label,.profit-stats .stat-label{font-size:.68rem}
+ .route-stats .stat-value,.profit-stats .stat-value{font-size:.92rem}
+ .route-results-card{padding:15px 12px}
+ .route-cards{grid-template-columns:minmax(0,1fr);gap:10px}
+ .route-customer-card{padding:12px}
+ .route-customer-card form{grid-template-columns:minmax(0,1fr)}
+ .route-customer-card form .field,.route-customer-card form .btn{grid-column:1}
+ .route-customer-top .btn{min-height:36px;padding:7px 9px}
+ .profit-table{min-width:820px}
+ .mobile-nav{grid-template-columns:repeat(8,minmax(0,1fr));gap:0;padding-inline:2px}
+ .mob{min-width:0;min-height:48px;padding:3px 0;font-size:.53rem;gap:2px}
+ .mob span{width:23px;height:22px;font-size:16px}
+}
+@media(max-width:390px){
+ .mobile-nav{grid-template-columns:repeat(8,minmax(0,1fr))}
+ .mob{font-size:.49rem}
+ .mob span{font-size:15px}
+ .route-filters,.profit-filters{gap:7px}
+ .route-stats .stat-value,.profit-stats .stat-value{font-size:.84rem}
+}
