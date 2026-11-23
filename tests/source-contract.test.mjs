@@ -105,3 +105,24 @@ test('responsive UX styles cover dashboard, lists, forms, dialogs and navigation
  const css=read('app.css');
  for(const token of ['.welcome-card','.stat{','.quick{','.data-table','.line-form','.list-row','.modal-card','.mobile-nav','.app-footer'])assert.ok(css.includes(token),token);
 });
+
+test('customer account statement and follow-up insights are wired into the app',()=>{
+ const app=read('src/app.js');
+ const sw=read('sw.js');
+ const insights=read('src/customer-insights.js');
+ assert.ok(app.includes("from './customer-insights.js'"));
+ assert.ok(app.includes('function customerStatementModal()'));
+ assert.ok(app.includes('data-customer-statement'));
+ assert.ok(app.includes('data-customer-search'));
+ assert.ok(app.includes('مشتریان نیازمند پیگیری'));
+ assert.ok(sw.includes('./src/customer-insights.js'));
+ assert.ok(insights.includes('buildCustomerStatement'));
+ assert.ok(insights.includes('getCustomerFollowups'));
+});
+
+test('desktop layout spans viewport and sidebar is anchored to the right edge',()=>{
+ const css=read('app.css');
+ assert.ok(css.includes('.layout{width:100%;max-width:none;margin:0}'));
+ assert.ok(css.includes('.sidebar{position:sticky;top:0;right:0'));
+ assert.ok(css.includes('@media(max-width:760px)'));
+});

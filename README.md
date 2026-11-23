@@ -4,7 +4,7 @@ Responsive, offline-first Persian PWA prototype for Ali's confectionery-supplies
 
 Designed and developed by [Parviz Bahrami](https://parvizbahramib73.github.io/personal-brand-website).
 
-> **Prototype 0.1.5 — not approved for real accounting yet.** Use synthetic data only until Android device, backup/restore, financial edge-case, and security tests are completed.
+> **Prototype 0.1.6 — not approved for real accounting yet.** Use synthetic data only until Android device, backup/restore, financial edge-case, and security tests are completed.
 
 ## Quick links
 
@@ -22,6 +22,8 @@ Designed and developed by [Parviz Bahrami](https://parvizbahramib73.github.io/pe
 - Manual encrypted backup/export and restore/import.
 - Branded AliFactor invoice preview/print and PNG sharing through the Android system share sheet.
 - Live Persian three-digit grouping in Toman input fields with cursor preservation.
+- Customer search, chronological account statements with running balances, and dashboard follow-up suggestions.
+- Faster invoice entry with preserved draft state and focus progression; full-width desktop shell with right-edge sidebar.
 - GitHub stores source code and runs tests; it is **not** the operational database or backup store.
 - Project Pages paths are relative so the app can be hosted at `/warehouse-lite/`.
 

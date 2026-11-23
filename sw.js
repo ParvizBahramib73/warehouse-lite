@@ -1,5 +1,5 @@
-const CACHE='warehouse-lite-shell-v10';
-const SHELL=['./','./index.html','./app.css','./src/app.js','./src/domain.js','./src/data.js','./src/backup.js','./src/utils.js','./src/invoice-share.js','./manifest.webmanifest','./icons/icon-192.png','./icons/icon-512.png'];
+const CACHE='warehouse-lite-shell-v11';
+const SHELL=['./','./index.html','./app.css','./src/app.js','./src/domain.js','./src/data.js','./src/backup.js','./src/utils.js','./src/invoice-share.js','./src/customer-insights.js','./manifest.webmanifest','./icons/icon-192.png','./icons/icon-512.png'];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(SHELL)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',event=>event.waitUntil(Promise.all([caches.keys().then(keys=>Promise.all(keys.filter(key=>key!==CACHE).map(key=>caches.delete(key)))),self.clients.claim()])));
 self.addEventListener('fetch',event=>{

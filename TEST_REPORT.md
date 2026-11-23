@@ -1,4 +1,4 @@
-# Warehouse Lite v0.1.5 — test evidence
+# Warehouse Lite v0.1.6 — test evidence
 
 Date: 2026-11-23
 
@@ -23,7 +23,7 @@ Date: 2026-11-23
 - JavaScript syntax checks: PASS for domain, data, backup, app, utils, service worker and build script.
 - Static PWA build: PASS.
 - GitHub Pages deployment: PASS.
-- Latest code commit under test: `00cca14ac15a64d46a44f0b4518a250a3ebfafe5`.
+- Latest code commit under test: `PENDING_RELEASE_COMMIT`.
 - Latest successful CI run: https://github.com/ParvizBahramib73/warehouse-lite/actions/runs/PENDING_FINAL_CI
 - Latest successful Pages deployment: https://github.com/ParvizBahramib73/warehouse-lite/actions/runs/PENDING_FINAL_DEPLOY
 
