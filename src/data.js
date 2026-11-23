@@ -1,7 +1,8 @@
 import {asInteger,asPositiveInteger,parseBaseQuantity,lineTotal,validateSaleLines,isoNow,makeId} from './domain.js';
+import {snapshotSaleLines} from './costing.js';
 export const DB_NAME = 'warehouse-lite-v01';
-export const DB_VERSION = 1;
-export const TABLES = ['products','suppliers','customers','purchases','sales','payments','movements'];
+export const DB_VERSION = 2;
+export const TABLES = ['products','suppliers','customers','purchases','sales','payments','movements','visits'];
 
 function request(req) { return new Promise((resolve,reject) => { req.onsuccess = () => resolve(req.result); req.onerror = () => reject(req.error); }); }
 function completed(tx) { return new Promise((resolve,reject) => { tx.oncomplete=()=>resolve(); tx.onabort=()=>reject(tx.error||new Error('تراکنش لغو شد.')); tx.onerror=()=>{}; }); }
@@ -11,7 +12,23 @@ function abort(tx, done, error) { try { tx.abort(); } catch {} return done.catch
 export function openDb() {
   return new Promise((resolve,reject)=>{
     const r=indexedDB.open(DB_NAME,DB_VERSION);
-    r.onupgradeneeded=()=>{const db=r.result; for(const t of TABLES) if(!db.objectStoreNames.contains(t)) db.createObjectStore(t,{keyPath:'id'});};
+    r.onupgradeneeded=()=>{
+      const db=r.result,tx=r.transaction;
+      for(const t of TABLES)if(!db.objectStoreNames.contains(t))db.createObjectStore(t,{keyPath:'id'});
+      const indexes={
+        products:[['byName','name',{}],['byCode','code',{}]],
+        customers:[['byDistrict','district',{}],['byVisitDay','visitDay',{}]],
+        purchases:[['byCreatedAt','createdAt',{}],['byProduct','productId',{}]],
+        sales:[['byCreatedAt','createdAt',{}],['byCustomer','customerId',{}],['byInvoiceNo','invoiceNo',{}]],
+        payments:[['byCreatedAt','createdAt',{}],['byCustomer','customerId',{}]],
+        movements:[['byCreatedAt','createdAt',{}],['byProduct','productId',{}]],
+        visits:[['byDate','plannedDate',{}],['byCustomer','customerId',{}],['byCustomerDate',['customerId','plannedDate'],{unique:true}]]
+      };
+      for(const [table,items] of Object.entries(indexes)){
+        const store=tx.objectStore(table);
+        for(const [name,keyPath,options] of items)if(!store.indexNames.contains(name))store.createIndex(name,keyPath,options);
+      }
+    };
     r.onsuccess=()=>{const db=r.result; db.onversionchange=()=>db.close(); resolve(db);};
     r.onerror=()=>reject(r.error);
     r.onblocked=()=>reject(new Error('برنامه در پنجره دیگری باز است؛ آن را ببندید.'));
@@ -149,9 +166,9 @@ export async function voidPurchase(db, id) {
 
 export async function addSale(db, input) {
   const {customerId,lines,paidAmount,paymentMethod}=input;
-  const tx=db.transaction(['products','customers','sales','payments','movements'],'readwrite'); const done=completed(tx);
+  const tx=db.transaction(['products','customers','sales','payments','movements','purchases'],'readwrite'); const done=completed(tx);
   try {
-    const customer=await request(tx.objectStore('customers').get(customerId));
+    const [customer,purchases]=await Promise.all([request(tx.objectStore('customers').get(customerId)),request(tx.objectStore('purchases').getAll())]);
     if(!customer||!active(customer)) throw new Error('مشتری یافت نشد یا غیرفعال است.');
     if(!Array.isArray(lines)||!lines.length) throw new Error('اقلام فاکتور خالی است.');
     const ids=[...new Set(lines.map(l=>l.productId))], products=await Promise.all(ids.map(id=>request(tx.objectStore('products').get(id))));
@@ -165,18 +182,19 @@ export async function addSale(db, input) {
       tx.objectStore('products').put({...p,stockBase:p.stockBase-delta});
       tx.objectStore('movements').add({id:makeId(),createdAt:now,productId:p.id,sourceType:'sale',sourceId:id,deltaBase:-delta});
     }
-    tx.objectStore('sales').add({id,createdAt:now,invoiceNo:'WL-'+new Date().toISOString().slice(0,10).replace(/-/g,'')+'-'+id.slice(0,6).toUpperCase(),customerId,customerName:customer.name,lines:normalized,total,status:'active'});
+    const costedLines=snapshotSaleLines(normalized,purchases,now);
+    tx.objectStore('sales').add({id,createdAt:now,invoiceNo:'WL-'+new Date().toISOString().slice(0,10).replace(/-/g,'')+'-'+id.slice(0,6).toUpperCase(),customerId,customerName:customer.name,lines:costedLines,total,status:'active'});
     if(paid>0)tx.objectStore('payments').add({id:makeId(),createdAt:now,customerId,amount:paid,method:paymentMethod,saleId:id,note:'دریافت هنگام فروش',status:'active'});
     await done; return id;
   } catch(error){return abort(tx,done,error);}
 }
 
 export async function updateSale(db, id, lines) {
-  const tx=db.transaction(['products','sales','payments','movements'],'readwrite'); const done=completed(tx);
+  const tx=db.transaction(['products','sales','payments','movements','purchases'],'readwrite'); const done=completed(tx);
   try {
     const sale=await request(tx.objectStore('sales').get(id));
     if(!sale||sale.status==='void') throw new Error('فاکتور پیدا نشد یا باطل شده است.');
-    const [allProducts,payments]=await Promise.all([request(tx.objectStore('products').getAll()),request(tx.objectStore('payments').getAll())]);
+    const [allProducts,payments,purchases]=await Promise.all([request(tx.objectStore('products').getAll()),request(tx.objectStore('payments').getAll()),request(tx.objectStore('purchases').getAll())]);
     const oldRequired=new Map();
     for(const line of sale.lines||[]) oldRequired.set(line.productId,(oldRequired.get(line.productId)||0)+line.quantityBase);
     const oldIds=new Set(oldRequired.keys());
@@ -196,7 +214,7 @@ export async function updateSale(db, id, lines) {
       if(oldQty)tx.objectStore('movements').add({id:makeId(),createdAt:now,productId,sourceType:'sale-edit-reversal',sourceId:id,deltaBase:oldQty});
       if(newQty)tx.objectStore('movements').add({id:makeId(),createdAt:now,productId,sourceType:'sale-edit',sourceId:id,deltaBase:-newQty});
     }
-    tx.objectStore('sales').put({...sale,lines:normalized,total,modifiedAt:now});
+    tx.objectStore('sales').put({...sale,lines:snapshotSaleLines(normalized,purchases,now),total,modifiedAt:now});
     await done;
   } catch(error) { return abort(tx,done,error); }
 }
@@ -262,8 +280,28 @@ export async function voidPayment(db,id) {
   }catch(error){return abort(tx,done,error);}
 }
 
+export async function saveVisit(db,{customerId,plannedDate,outcome,note,nextFollowUpDate}) {
+  const allowed=['planned','purchased','no_purchase','unavailable','follow_up'];
+  if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(String(plannedDate||'')))throw new Error('تاریخ مراجعه معتبر نیست.');
+  if(!allowed.includes(outcome))throw new Error('نتیجه مراجعه معتبر نیست.');
+  const detail=String(note||'').trim().slice(0,500);
+  const nextDate=String(nextFollowUpDate||'');
+  if(outcome==='follow_up'&&!/^\\d{4}-\\d{2}-\\d{2}$/.test(nextDate))throw new Error('برای پیگیری مجدد، تاریخ بعدی را انتخاب کنید.');
+  if(nextDate&&nextDate<plannedDate)throw new Error('تاریخ پیگیری نمی‌تواند قبل از تاریخ مراجعه باشد.');
+  const tx=db.transaction(['customers','visits'],'readwrite');const done=completed(tx);
+  try{
+    const customer=await request(tx.objectStore('customers').get(customerId));
+    if(!customer||!active(customer))throw new Error('مشتری پیدا نشد یا غیرفعال است.');
+    const store=tx.objectStore('visits');
+    const existing=await request(store.index('byCustomerDate').get([customerId,plannedDate]));
+    const now=isoNow();
+    const row={id:existing?.id||makeId(),customerId,customerName:customer.name,plannedDate,outcome,note:detail,nextFollowUpDate:outcome==='follow_up'?nextDate:'',createdAt:existing?.createdAt||now,modifiedAt:now};
+    store.put(row);await done;return row.id;
+  }catch(error){return abort(tx,done,error);}
+}
+
 export async function replaceAll(db,snapshot) {
   const tx=db.transaction(TABLES,'readwrite');const done=completed(tx);
-  for(const name of TABLES){const store=tx.objectStore(name);store.clear();for(const row of snapshot[name])store.add(row);}
+  for(const name of TABLES){const store=tx.objectStore(name);store.clear();for(const row of (snapshot[name]||[]))store.add(row);}
   await done;
 }
