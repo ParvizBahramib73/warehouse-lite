@@ -445,6 +445,11 @@ async function makeDemo(){if(data.products.length||data.customers.length||data.s
 }
 
 app.addEventListener('click',async(event)=>{
+ const listPageButton=event.target.closest('[data-list-page]');if(listPageButton){const key=listPageButton.dataset.listKey,state=listState[key];if(state){state.page=Math.max(1,state.page+(listPageButton.dataset.direction==='next'?1:-1));render();}return;}
+ const visitPageButton=event.target.closest('[data-visit-page]');if(visitPageButton){visitState.page=Math.max(1,visitState.page+(visitPageButton.dataset.visitPage==='next'?1:-1));render();return;}
+ const profitPageButton=event.target.closest('[data-profit-page]');if(profitPageButton){profitState.page=Math.max(1,profitState.page+(profitPageButton.dataset.profitPage==='next'?1:-1));render();return;}
+ if(event.target.closest('[data-visit-today]')){visitState.date=todayKey;visitState.page=1;render();return;}
+
  const statementClose=event.target.closest('[data-close-statement]');if(statementClose||event.target.matches('[data-statement-backdrop]')){statementCustomerId=null;render();return;}
  const statementOpen=event.target.closest('[data-customer-statement]');if(statementOpen){statementCustomerId=statementOpen.dataset.customerStatement;render();return;}
  const close=event.target.closest('[data-close-editor]');if(close||event.target.classList.contains('modal-backdrop')){closeEditor();return;}
@@ -512,8 +517,22 @@ app.addEventListener('click',async(event)=>{
 app.addEventListener('change',event=>{
  if(event.target.id==='purchase-product'){
   const p=data.products.find(p=>p.id===event.target.value);
-  const select=$('#purchase-unit');select.innerHTML=p?productUnits(p).map(([v,l])=>opt(v,l,'')).join(''):'<option value="">انتخاب کالا</option>';
+  const select=$('#purchase-unit');select.innerHTML=p?productUnits(p).map(([v,l])=>opt(v,l,'' )).join(''):'<option value="">انتخاب کالا</option>';
  }
+ if(event.target.matches('[data-list-filter]')){
+  const filter=event.target.dataset.listFilter;
+  if(filter==='products-status')listState.products.status=event.target.value;
+  if(filter==='sales-status')listState.sales.status=event.target.value;
+  const key=filter.split('-')[0];if(listState[key])listState[key].page=1;
+  render();return;
+ }
+ if(event.target.matches('[data-visit-date]')){visitState.date=event.target.value||todayKey;visitState.page=1;render();return;}
+ if(event.target.matches('[data-visit-district]')){visitState.district=event.target.value;visitState.page=1;render();return;}
+ if(event.target.matches('[data-visit-status]')){visitState.status=event.target.value;visitState.page=1;render();return;}
+ if(event.target.matches('[data-profit-from]')){profitState.from=event.target.value;profitState.page=1;render();return;}
+ if(event.target.matches('[data-profit-to]')){profitState.to=event.target.value;profitState.page=1;render();return;}
+ if(event.target.matches('[data-visit-outcome]')){rememberVisitDraft(event.target.closest('[data-visit-form]'));render();return;}
+ const visitForm=event.target.closest('[data-visit-form]');if(visitForm)rememberVisitDraft(visitForm);
  const saleForm=event.target.closest('[data-sale-lines-form]');
  if(event.target.matches('[data-sale-product]')&&saleForm){
   const index=Number(event.target.dataset.saleProduct);currRows(saleForm);
@@ -528,11 +547,19 @@ app.addEventListener('change',event=>{
 });
 app.addEventListener('input',event=>{
  if(event.target.matches('[data-money-input]'))formatMoneyField(event.target);
- if(event.target.matches('[data-customer-search]')){const query=event.target.value.trim().toLocaleLowerCase('fa');let visible=0;app.querySelectorAll('[data-customer-row]').forEach(row=>{const match=row.dataset.search.includes(query);row.hidden=!match;if(match)visible++;});const empty=$('#customer-search-empty');if(empty)empty.hidden=visible!==0;}
- const saleForm=event.target.closest('[data-sale-lines-form]');
- if(saleForm)updateSaleTotal(saleForm);
+ if(event.target.matches('[data-list-search]')){
+  const key=event.target.dataset.listSearch,caret=event.target.selectionStart??event.target.value.length;
+  if(listState[key]){listState[key].query=event.target.value;listState[key].page=1;renderSearchAgain('[data-list-search="'+key+'"]',caret);}return;
+ }
+ if(event.target.matches('[data-visit-search]')){
+  const caret=event.target.selectionStart??event.target.value.length;visitState.query=event.target.value;visitState.page=1;renderSearchAgain('[data-visit-search]',caret);return;
+ }
+ if(event.target.matches('[data-profit-search]')){
+  const caret=event.target.selectionStart??event.target.value.length;profitState.query=event.target.value;profitState.page=1;renderSearchAgain('[data-profit-search]',caret);return;
+ }
+ const visitForm=event.target.closest('[data-visit-form]');if(visitForm)rememberVisitDraft(visitForm);
+ const saleForm=event.target.closest('[data-sale-lines-form]');if(saleForm)updateSaleTotal(saleForm);
 });
-app.addEventListener('change',event=>{if(event.target.matches('[data-money-input]'))formatMoneyField(event.target);});
 app.addEventListener('focusout',event=>{if(event.target.matches('[data-money-input]'))formatMoneyField(event.target);});
 app.addEventListener('compositionend',event=>{if(event.target.matches('[data-money-input]'))formatMoneyField(event.target);});
 
@@ -558,6 +585,11 @@ app.addEventListener('submit',async(event)=>{
    saleRows=[{productId:'',unit:'',quantity:'1',unitPrice:''}];saleState={customerId:'',paidAmount:'0',paymentMethod:'cash'};
   }
   else if(kind==='payment'){await addPayment(db,{customerId:formVal(form,'customerId'),amount:formVal(form,'amount'),method:formVal(form,'method'),note:formVal(form,'note')});}
+  else if(kind==='visit'){
+   const customerId=formVal(form,'customerId'),plannedDate=formVal(form,'plannedDate');
+   await saveVisit(db,{customerId,plannedDate,outcome:formVal(form,'outcome'),note:formVal(form,'note'),nextFollowUpDate:formVal(form,'nextFollowUpDate')});
+   visitDrafts.delete(visitDraftKey(customerId,plannedDate));
+  }
   else if(kind==='edit-product'){
    const row=data.products.find(x=>x.id===formVal(form,'id'));if(!row)throw new Error('کالا پیدا نشد.');
    const base=formVal(form,'kind')||row.kind,packInput=formVal(form,'pack');
@@ -590,7 +622,7 @@ app.addEventListener('submit',async(event)=>{
    render();notify('فایل بررسی شد و هنوز هیچ اطلاعاتی تغییر نکرده است.');return;
   }
   if(kind.startsWith('edit-')){const wasSale=editor?.type==='sale';editor=null;if(wasSale){saleRows=[{productId:'',unit:'',quantity:'1',unitPrice:''}];saleState={customerId:'',paidAmount:'0',paymentMethod:'cash'};}}
-  await refresh();if(kind==='sale'){updateSaleTotal($('#sale-form'));$('#sale-form [name="customerId"]')?.focus();}notify(kind.startsWith('edit-')?'تغییرات با موفقیت ذخیره شد.':'عملیات با موفقیت ثبت شد.');
+  await refresh();if(kind==='sale'){updateSaleTotal($('#sale-form'));$('#sale-form [name="customerId"]')?.focus();}notify(kind==='visit'?'نتیجه مراجعه ذخیره شد.':kind.startsWith('edit-')?'تغییرات با موفقیت ذخیره شد.':'عملیات با موفقیت ثبت شد.');
  }catch(e){if(kind==='import'){importCandidate=null;importWrapper=null;render();}notify(e.message||'در ثبت اطلاعات خطایی رخ داد.','error');}
  finally{if(submitButton&&submitButton.isConnected)submitButton.disabled=false;}
 });
