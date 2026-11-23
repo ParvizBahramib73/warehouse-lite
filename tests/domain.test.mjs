@@ -96,3 +96,13 @@ test('version 2 backup validates visit history and keeps legacy version 1 compat
  assert.equal(validateSnapshot(upgraded).visits,1);
  assert.throws(()=>validateSnapshot({...upgraded,visits:[{...upgraded.visits[0],customerId:'missing'}]}),/مراجعه نامعتبر/);
 });
+
+test('encrypted v2 backup accepts detailed visit outcomes and route metadata',()=>{
+ const visitSnapshot={...snap,schemaVersion:2,visits:[
+  {id:'v1',customerId:'c1',plannedDate:'2026-11-23',outcome:'small_purchase',routeName:'مسیر کبودرآهنگ',routeOrder:1,visitedAt:'2026-11-23T08:00:00.000Z',note:'نیم کارتن روغن'},
+  {id:'v2',customerId:'c1',plannedDate:'2026-11-24',outcome:'rescheduled',routeName:'مسیر مهدیه',routeOrder:1,nextFollowUpDate:'2026-11-26',note:'مراجعه مجدد'}
+ ]};
+ assert.equal(validateSnapshot(visitSnapshot).visits,2);
+ assert.throws(()=>validateSnapshot({...visitSnapshot,visits:[{...visitSnapshot.visits[0],routeOrder:0}]}),/ترتیب مسیر/);
+ assert.throws(()=>validateSnapshot({...visitSnapshot,visits:[{...visitSnapshot.visits[0],customerId:'missing'}]}),/سابقه مراجعه/);
+});
