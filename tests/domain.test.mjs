@@ -45,3 +45,17 @@ test('encrypt/decrypt roundtrip and rejects wrong password and tampering',async(
 test('backup validation rejects inconsistent stock',()=>{
  assert.throws(()=>validateSnapshot({...snap,products:[{...kg,stockBase:12000}]}),/مطابقت ندارند/);
 });
+
+test('customer balance ignores voided invoices and voided receipts',()=>{
+ const sales=[
+  {customerId:'c1',total:100000,status:'active'},
+  {customerId:'c1',total:50000,status:'void'},
+  {customerId:'c1',total:20000}
+ ];
+ const payments=[
+  {customerId:'c1',amount:30000,status:'active'},
+  {customerId:'c1',amount:10000,status:'void'},
+  {customerId:'c1',amount:5000}
+ ];
+ assert.equal(customerBalance('c1',sales,payments),85000);
+});
