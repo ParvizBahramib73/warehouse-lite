@@ -1,10 +1,10 @@
 # Warehouse Lite | انبار من
 
-Offline-first Persian PWA prototype for Ali's confectionery-supplies distribution business in Hamadan, Iran.
+Responsive, offline-first Persian PWA prototype for Ali's confectionery-supplies distribution business in Hamadan, Iran.
 
 Designed and developed by [Parviz Bahrami](https://parvizbahramib73.github.io/personal-brand-website).
 
-> **Prototype 0.1.4 — not approved for real accounting yet.** Use synthetic data only until Android device, backup/restore, financial edge-case, and security tests are completed.
+> **Prototype 0.1.5 — not approved for real accounting yet.** Use synthetic data only until Android device, backup/restore, financial edge-case, and security tests are completed.
 
 ## Quick links
 
