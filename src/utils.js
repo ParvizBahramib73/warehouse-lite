@@ -28,12 +28,13 @@ export function formatGroupedInteger(value){
 export function formatMoneyField(input){
  if(!input)return;
  const before=String(input.value??'');
- const caret=typeof input.selectionStart==='number'?input.selectionStart:before.length;
+ const hasFocus=typeof document!=='undefined'&&document.activeElement===input;
+ const caret=hasFocus&&typeof input.selectionStart==='number'?input.selectionStart:before.length;
  const prefixDigits=(before.slice(0,caret).match(/[0-9۰-۹٠-٩]/g)||[]).length;
  const formatted=formatGroupedInteger(before);
  if(before===formatted)return;
  input.value=formatted;
- if(typeof input.setSelectionRange==='function'){
+ if(hasFocus&&typeof input.setSelectionRange==='function'){
   let position=0,seen=0;
   while(position<formatted.length&&seen<prefixDigits){
    if(/[0-9۰-۹٠-٩]/.test(formatted[position]))seen++;
