@@ -100,8 +100,17 @@ function masterActions(type,row,canDelete){
  return `<div class="record-actions"><button type="button" class="btn sm outline" data-edit-type="${type}" data-record-id="${esc(row.id)}">ویرایش</button>${isActive(row)?`<button type="button" class="btn sm soft" data-toggle-type="${type}" data-record-id="${esc(row.id)}" data-active="false" ${archiveDisabled?'disabled title="ابتدا موجودی را تعیین تکلیف کنید"':''}>غیرفعال</button>`:`<button type="button" class="btn sm soft" data-toggle-type="${type}" data-record-id="${esc(row.id)}" data-active="true">فعال‌سازی</button>`}${canDelete?`<button type="button" class="btn sm danger" data-delete-type="${type}" data-record-id="${esc(row.id)}">حذف دائمی</button>`:''}</div>`;
 }
 
-function productsPage(){return `<div class="grid two"><section class="card"><div class="card-header"><h2>فهرست کالاها</h2><span class="tag">${data.products.length} کالا</span></div>
- ${data.products.length?`<div class="table-wrap products-table-wrap"><table class="data-table products-table"><thead><tr><th>کالا</th><th>موجودی</th><th>قیمت پیشنهادی</th><th>وضعیت</th><th>عملیات</th></tr></thead><tbody>${[...data.products].sort((a,b)=>a.name.localeCompare(b.name,'fa')).map(p=>`<tr><td class="name-cell"><strong>${esc(p.name)}</strong><small>${esc(p.category||'بدون دسته')} · ${esc(p.code||'—')}</small></td><td>${stockLabel(p)}</td><td>${money(p.salePrice)} / ${p.kind==='gram'?'کیلو':'عدد'}</td><td><span class="tag ${!isActive(p)?'red':stockTone(p)}">${!isActive(p)?'غیرفعال':p.stockBase<=p.lowBase?'کم‌موجود':'موجود'}</span></td><td>${masterActions('product',p,canDeleteMaster('product',p))}</td></tr>`).join('')}</tbody></table></div>`:empty('📦','کالایی ثبت نشده','از فرم روبه‌رو شروع کنید.')}</section>
+
+function productsPage(){
+ const state=listState.products,q=state.query.trim().toLocaleLowerCase('fa');
+ let rows=[...data.products].sort((a,b)=>a.name.localeCompare(b.name,'fa')).filter(p=>!q||[p.name,p.code,p.category].filter(Boolean).join(' ').toLocaleLowerCase('fa').includes(q));
+ if(state.status==='active')rows=rows.filter(isActive);
+ if(state.status==='inactive')rows=rows.filter(p=>!isActive(p));
+ if(state.status==='low')rows=rows.filter(p=>isActive(p)&&p.stockBase<=p.lowBase);
+ const view=listPage(rows,state);
+ return `<div class="grid two"><section class="card"><div class="card-header"><div><h2>فهرست کالاها</h2><p class="small muted">جستجو و فیلتر برای مدیریت فهرست‌های بزرگ</p></div><span class="tag">${data.products.length} کالا</span></div>
+ <div class="list-toolbar">${listSearch('products','نام، کد یا دسته کالا…')}<select class="toolbar-select" data-list-filter="products-status" aria-label="فیلتر وضعیت کالا"><option value="all" ${state.status==='all'?'selected':''}>همه وضعیت‌ها</option><option value="active" ${state.status==='active'?'selected':''}>فعال</option><option value="inactive" ${state.status==='inactive'?'selected':''}>غیرفعال</option><option value="low" ${state.status==='low'?'selected':''}>کم‌موجود</option></select></div>
+ ${view.total?`<div class="table-wrap products-table-wrap"><table class="data-table products-table"><thead><tr><th>کالا</th><th>موجودی</th><th>قیمت پیشنهادی</th><th>وضعیت</th><th>عملیات</th></tr></thead><tbody>${view.rows.map(p=>`<tr><td class="name-cell"><strong>${esc(p.name)}</strong><small>${esc(p.category||'بدون دسته')} · ${esc(p.code||'—')}</small></td><td>${stockLabel(p)}</td><td>${money(p.salePrice)} / ${p.kind==='gram'?'کیلو':'عدد'}</td><td><span class="tag ${!isActive(p)?'red':stockTone(p)}">${!isActive(p)?'غیرفعال':p.stockBase<=p.lowBase?'کم‌موجود':'موجود'}</span></td><td>${masterActions('product',p,canDeleteMaster('product',p))}</td></tr>`).join('')}</tbody></table></div>${pager('products',view)}`:empty('🔎','کالایی پیدا نشد','عبارت جستجو یا فیلتر وضعیت را تغییر دهید.')}</section>
  <section class="card"><div class="card-header"><h2>تعریف کالای جدید</h2></div><form data-form="product" class="form-grid">
  <div class="field wide"><label for="p-name">نام کالا *</label><input id="p-name" name="name" required maxlength="100" placeholder="مثلاً بادکا یا روغن قنادی"/></div>
  <div class="field"><label for="p-code">کد کالا (اختیاری)</label><input id="p-code" name="code" maxlength="30" placeholder="مثلاً OIL-5"/></div>
@@ -111,10 +120,16 @@ function productsPage(){return `<div class="grid two"><section class="card"><div
  <div class="field"><label for="p-low">حد هشدار موجودی</label><input id="p-low" name="low" inputmode="decimal" value="0" required/><span class="hint">به واحد پایه انتخاب‌شده</span></div>
  <div class="field"><label for="p-price">قیمت فروش پیشنهادی (تومان)</label><input id="p-price" name="salePrice" data-money-input dir="ltr" inputmode="numeric" value="0" required/><span class="hint">به ازای هر کیلو یا هر عدد؛ فاکتور می‌تواند قیمت دیگری داشته باشد.</span></div>
  <div class="form-footer"><button type="submit" class="btn primary full">+ افزودن کالا</button></div>
- </form></section></div>`;}
+ </form></section></div>`;
+}
+
+
 
 function purchasesPage(){
  const activeProducts=data.products.filter(isActive),activeSuppliers=data.suppliers.filter(isActive);
+ const state=listState.purchases,q=state.query.trim().toLocaleLowerCase('fa');
+ const filtered=[...data.purchases].sort((a,b)=>b.createdAt.localeCompare(a.createdAt)).filter(p=>!q||[p.productName,p.supplierName,p.paymentKind].filter(Boolean).join(' ').toLocaleLowerCase('fa').includes(q));
+ const view=listPage(filtered,state);
  return `<div class="grid two"><section class="card"><div class="card-header"><h2>ثبت خرید و ورود به انبار</h2></div>
  <form data-form="purchase" class="form-grid">
  <div class="field"><label>تأمین‌کننده *</label><select name="supplierId" required>${optionMarkup(activeSuppliers,'id','name')}</select></div>
@@ -129,11 +144,13 @@ function purchasesPage(){
  <section class="grid">
  <div class="card"><div class="card-header"><h2>افزودن تأمین‌کننده</h2></div><form data-form="supplier" class="form-grid"><div class="field wide"><label>نام *</label><input name="name" required maxlength="100" placeholder="شرکت یا فروشنده"/></div><div class="field wide"><label>شماره تماس</label><input name="phone" inputmode="tel" maxlength="25" placeholder="اختیاری"/></div><div class="form-footer"><button class="btn outline full" type="submit">+ ثبت تأمین‌کننده</button></div></form></div>
  <div class="card"><div class="card-header"><h2>تأمین‌کنندگان</h2><span class="tag">${data.suppliers.length}</span></div>
- ${data.suppliers.length?`<div class="list">${[...data.suppliers].sort((a,b)=>a.name.localeCompare(b.name,'fa')).map(s=>`<div class="list-row"><div class="item-avatar">🚚</div><div class="grow"><strong>${esc(s.name)}</strong><small>${esc(s.phone||'بدون شماره')}</small>${!isActive(s)?'<span class="tag red">غیرفعال</span>':''}</div>${masterActions('supplier',s,canDeleteMaster('supplier',s))}</div>`).join('')}</div>`:empty('🚚','تأمین‌کننده‌ای ثبت نشده','از فرم بالا اضافه کنید.')}</div>
- <div class="card"><div class="card-header"><h2>خریدهای اخیر</h2><span class="tag">${data.purchases.length}</span></div>
- ${data.purchases.length?`<div class="list">${[...data.purchases].sort((a,b)=>b.createdAt.localeCompare(a.createdAt)).slice(0,10).map(p=>`<div class="list-row"><div class="item-avatar">📥</div><div class="grow"><strong>${esc(p.productName)}</strong><small>${esc(p.supplierName)} · ${dateFa(p.createdAt)}</small><span class="tag ${p.status==='void'?'red':'good'}">${p.status==='void'?'باطل شده':money(p.total)}</span></div>${p.status==='void'?'':`<div class="record-actions"><button class="btn sm outline" data-edit-purchase="${esc(p.id)}">ویرایش</button><button class="btn sm danger" data-void-purchase="${esc(p.id)}">ابطال</button></div>`}</div>`).join('')}</div>`:empty('↓','خریدی ثبت نشده','خرید ثبت‌شده به موجودی اضافه می‌شود.')}</div>
+ ${data.suppliers.length?`<div class="list">${[...data.suppliers].sort((a,b)=>a.name.localeCompare(b.name,'fa')).slice(0,25).map(s=>`<div class="list-row"><div class="item-avatar">🚚</div><div class="grow"><strong>${esc(s.name)}</strong><small>${esc(s.phone||'بدون شماره')}</small>${!isActive(s)?'<span class="tag red">غیرفعال</span>':''}</div>${masterActions('supplier',s,canDeleteMaster('supplier',s))}</div>`).join('')}</div>${data.suppliers.length>25?'<p class="small muted">۲۵ تأمین‌کننده اول نمایش داده شده‌اند؛ جستجوی مستقل تأمین‌کنندگان در گام بعدی قابل افزودن است.</p>':''}`:empty('🚚','تأمین‌کننده‌ای ثبت نشده','از فرم بالا اضافه کنید.')}</div>
+ <div class="card"><div class="card-header"><div><h2>سوابق خرید</h2><p class="small muted">جستجو در تمام اسناد خرید</p></div><span class="tag">${data.purchases.length} سند</span></div>
+ ${listSearch('purchases','نام کالا یا تأمین‌کننده…')}
+ ${view.total?`<div class="list">${view.rows.map(p=>`<div class="list-row"><div class="item-avatar">📥</div><div class="grow"><strong>${esc(p.productName)}</strong><small>${esc(p.supplierName)} · ${dateFa(p.createdAt)}</small><span class="tag ${p.status==='void'?'red':'good'}">${p.status==='void'?'باطل شده':money(p.total)}</span></div>${p.status==='void'?'':`<div class="record-actions"><button class="btn sm outline" data-edit-purchase="${esc(p.id)}">ویرایش</button><button class="btn sm danger" data-void-purchase="${esc(p.id)}">ابطال</button></div>`}</div>`).join('')}</div>${pager('purchases',view)}`:empty('🔎','سندی پیدا نشد','عبارت جستجو را تغییر دهید.')}</div>
  </section></div>`;
 }
+
 
 function saleRow(i,row){
  const p=data.products.find(x=>x.id===row.productId);
@@ -146,8 +163,14 @@ function saleRow(i,row){
  <div class="field"><label>قیمت واحد (تومان)</label><input name="unitPrice" data-money-input dir="ltr" required inputmode="numeric" value="${esc(row.unitPrice)}" placeholder="قیمت دلخواه"/></div></div></div>`;
 }
 
+
 function salesPage(){
  const activeCustomers=data.customers.filter(isActive),activeProducts=data.products.filter(isActive);
+ const state=listState.sales,q=state.query.trim().toLocaleLowerCase('fa');
+ let filtered=[...data.sales].sort((a,b)=>b.createdAt.localeCompare(a.createdAt)).filter(s=>!q||[s.customerName,s.invoiceNo].filter(Boolean).join(' ').toLocaleLowerCase('fa').includes(q));
+ if(state.status==='active')filtered=filtered.filter(s=>s.status!=='void');
+ if(state.status==='void')filtered=filtered.filter(s=>s.status==='void');
+ const view=listPage(filtered,state);
  return `<div class="grid two"><section class="card"><div class="card-header"><h2>صدور فاکتور فروش</h2><span class="tag">موجودی پس از تأیید کم می‌شود</span></div>
  <form data-form="sale" id="sale-form" class="sale-form" data-sale-lines-form><div class="sale-customer-row"><div class="field"><label>مشتری *</label><select name="customerId" required>${optionMarkup(activeCustomers,'id','name','انتخاب مشتری',saleState.customerId)}</select></div><button type="button" class="btn sm soft sale-new-customer" data-nav="customers">+ مشتری جدید</button></div><div class="section-split" style="margin:18px 0"></div>
  <div id="sale-lines">${saleRows.map((row,i)=>saleRow(i,row)).join('')}</div><button class="btn outline sm" data-action="add-line" type="button">+ افزودن قلم دیگر</button>
@@ -159,15 +182,21 @@ function salesPage(){
  </div>
  </form>
  <div class="inline-note warning">فاکتورهای ثبت‌شده قابل ویرایش‌اند. ابطال فاکتور فقط وقتی مجاز است که دریافت وجه یا تسویه بعدی نامشخصی به آن مشتری مرتبط نباشد.</div></section>
- <section class="card"><div class="card-header"><h2>فاکتورهای ثبت‌شده</h2><span class="tag">${data.sales.length} فاکتور</span></div><div class="invoice-share-note">برای ارسال، «ارسال فاکتور» را بزنید و در منوی اشتراک‌گذاری گوشی، واتساپ، تلگرام، روبیکا یا ایتا را انتخاب کنید. اگر اشتراک تصویر پشتیبانی نشود، تصویر در دانلودها ذخیره می‌شود تا دستی پیوست کنید.</div>
- ${data.sales.length?`<div class="list">${[...data.sales].sort((a,b)=>b.createdAt.localeCompare(a.createdAt)).slice(0,20).map(s=>`<div class="list-row invoice-row"><div class="item-avatar"><span aria-hidden="true">🧾</span></div><div class="grow"><strong>${esc(s.customerName)}</strong><small>${dateFa(s.createdAt)} · ${s.lines.length} قلم</small><small>${esc(s.invoiceNo)}</small><span class="tag ${s.status==='void'?'red':'good'}">${s.status==='void'?'باطل شده':money(s.total)}</span></div><div class="record-actions"><button class="btn sm outline" data-invoice="${esc(s.id)}">چاپ / PDF</button><button class="btn sm primary" data-share-invoice="${esc(s.id)}">ارسال فاکتور</button>${s.status==='void'?'':`<button class="btn sm outline" data-edit-sale="${esc(s.id)}">ویرایش</button><button class="btn sm danger" data-void-sale="${esc(s.id)}">ابطال</button>`}</div></div>`).join('')}</div>`:empty('🧾','فاکتوری ثبت نشده','از فرم روبه‌رو شروع کنید.')}</section></div>`;
+ <section class="card"><div class="card-header"><div><h2>فاکتورهای ثبت‌شده</h2><p class="small muted">جستجو و فیلتر بدون بارگذاری همه ردیف‌ها در صفحه</p></div><span class="tag">${data.sales.length} فاکتور</span></div><div class="invoice-share-note">برای ارسال، «ارسال فاکتور» را بزنید و در منوی اشتراک‌گذاری گوشی، واتساپ، تلگرام، روبیکا یا ایتا را انتخاب کنید.</div>
+ <div class="list-toolbar">${listSearch('sales','نام مشتری یا شماره فاکتور…')}<select class="toolbar-select" data-list-filter="sales-status" aria-label="وضعیت فاکتور"><option value="all" ${state.status==='all'?'selected':''}>همه فاکتورها</option><option value="active" ${state.status==='active'?'selected':''}>فعال</option><option value="void" ${state.status==='void'?'selected':''}>باطل‌شده</option></select></div>
+ ${view.total?`<div class="list">${view.rows.map(s=>`<div class="list-row invoice-row"><div class="item-avatar"><span aria-hidden="true">🧾</span></div><div class="grow"><strong>${esc(s.customerName)}</strong><small>${dateFa(s.createdAt)} · ${s.lines.length} قلم</small><small>${esc(s.invoiceNo)}</small><span class="tag ${s.status==='void'?'red':'good'}">${s.status==='void'?'باطل شده':money(s.total)}</span></div><div class="record-actions"><button class="btn sm outline" data-invoice="${esc(s.id)}">چاپ / PDF</button><button class="btn sm primary" data-share-invoice="${esc(s.id)}">ارسال فاکتور</button>${s.status==='void'?'':`<button class="btn sm outline" data-edit-sale="${esc(s.id)}">ویرایش</button><button class="btn sm danger" data-void-sale="${esc(s.id)}">ابطال</button>`}</div></div>`).join('')}</div>${pager('sales',view)}`:empty('🔎','فاکتوری پیدا نشد','عبارت جستجو یا وضعیت را تغییر دهید.')}</section></div>`;
 }
+
 
 
 function customersPage(){
  const customerOptions=data.customers.map(c=>({...c,displayName:c.name+(isActive(c)?'':' (غیرفعال)')}));
+ const state=listState.customers,q=state.query.trim().toLocaleLowerCase('fa');
+ const filtered=[...data.customers].sort((a,b)=>a.name.localeCompare(b.name,'fa')).filter(c=>!q||[c.name,c.phone,c.district].filter(Boolean).join(' ').toLocaleLowerCase('fa').includes(q));
+ const view=listPage(filtered,state);
  return `<div class="grid two customer-layout"><section class="card"><div class="card-header"><div><h2>فهرست مشتریان و حساب‌ها</h2><p class="small muted">جستجو، تماس و مشاهده گردش مالی هر مشتری</p></div><span class="tag">${data.customers.length} مشتری</span></div>
- ${data.customers.length?`<div class="customer-search"><input type="search" data-customer-search placeholder="جستجوی نام، شماره یا محله…" aria-label="جستجوی مشتری" autocomplete="off"/><span class="tag">جستجوی سریع</span></div><div class="list customer-list">${[...data.customers].sort((a,b)=>a.name.localeCompare(b.name,'fa')).map(c=>{const balance=customerBalance(c.id,data.sales,data.payments);return `<div class="list-row customer-row" data-customer-row data-search="${esc([c.name,c.phone,c.district].filter(Boolean).join(' ').toLocaleLowerCase('fa'))}"><div class="item-avatar"><span aria-hidden="true">👤</span></div><div class="grow"><strong>${esc(c.name)}</strong><small>${esc(c.district||'همدان')} · ${esc(c.visitDay||'بدون روز ویزیت')}</small>${c.phone?`<a href="tel:${esc(c.phone)}" class="small customer-phone">تماس: <bdi>${esc(c.phone)}</bdi></a>`:''}<span class="tag ${isActive(c)?'good':'red'}">${isActive(c)?'فعال':'غیرفعال'}</span></div><div class="customer-balance"><div class="number ${balance>0?'debt':'credit'}">${money(balance)}</div><small class="muted">${balance>0?'بدهکار':balance<0?'بستانکار':'تسویه'}</small><div class="customer-actions"><button type="button" class="btn sm soft" data-customer-statement="${esc(c.id)}">گردش حساب</button>${masterActions('customer',c,canDeleteMaster('customer',c))}</div></div></div>`}).join('')}</div><div id="customer-search-empty" class="search-empty" hidden>مشتری‌ای با این مشخصات پیدا نشد.</div>`:empty('👥','مشتری ثبت نشده','مشتریان قنادی‌های شهر همدان را اضافه کنید.')}</section>
+ ${listSearch('customers','جستجوی نام، شماره یا محله…')}
+ ${view.total?`<div class="list customer-list">${view.rows.map(c=>{const balance=customerBalance(c.id,data.sales,data.payments);return `<div class="list-row customer-row"><div class="item-avatar"><span aria-hidden="true">👤</span></div><div class="grow"><strong>${esc(c.name)}</strong><small>${esc(c.district||'همدان')} · ${esc(c.visitDay||'بدون روز ویزیت')}</small>${c.phone?`<a href="tel:${esc(c.phone)}" class="small customer-phone">تماس: <bdi>${esc(c.phone)}</bdi></a>`:''}<span class="tag ${isActive(c)?'good':'red'}">${isActive(c)?'فعال':'غیرفعال'}</span></div><div class="customer-balance"><div class="number ${balance>0?'debt':'credit'}">${money(balance)}</div><small class="muted">${balance>0?'بدهکار':balance<0?'بستانکار':'تسویه'}</small><div class="customer-actions"><button type="button" class="btn sm soft" data-customer-statement="${esc(c.id)}">گردش حساب</button>${masterActions('customer',c,canDeleteMaster('customer',c))}</div></div></div>`}).join('')}</div>${pager('customers',view)}`:empty('🔎','مشتری‌ای پیدا نشد','عبارت جستجو را تغییر دهید.')}</section>
  <section class="grid customer-forms"><div class="card"><div class="card-header"><div><h2>افزودن مشتری</h2><p class="small muted">اطلاعات تماس و زمان مراجعه را ثبت کنید</p></div></div><form data-form="customer" class="form-grid">
  <div class="field wide"><label>نام قنادی یا مشتری *</label><input name="name" required maxlength="100" placeholder="مثلاً قنادی بهار"/></div>
  <div class="field"><label>موبایل یا تلفن</label><input name="phone" inputmode="tel" maxlength="25" placeholder="شماره تماس"/></div><div class="field"><label>محله یا خیابان</label><input name="district" maxlength="80" placeholder="مثلاً مهدیه"/></div>
@@ -179,10 +208,11 @@ function customersPage(){
  <div class="field"><label>روش دریافت</label><select name="method"><option value="cash">نقدی</option><option value="transfer">انتقال بانکی</option></select></div>
  <div class="field wide"><label>شرح اختیاری</label><input name="note" maxlength="250" placeholder="مثلاً تسویه بخشی از بدهی"/></div>
  <div class="form-footer"><button type="submit" class="btn outline full" ${!data.customers.length?'disabled':''}>ثبت دریافت و اصلاح مانده</button></div></form></div>
- <div class="card"><div class="card-header"><div><h2>سوابق دریافت وجه</h2><p class="small muted">آخرین دریافت‌های ثبت‌شده</p></div><span class="tag">${data.payments.length}</span></div>
+ <div class="card"><div class="card-header"><div><h2>سوابق دریافت وجه</h2><p class="small muted">۱۲ دریافت اخیر</p></div><span class="tag">${data.payments.length}</span></div>
  ${data.payments.length?`<div class="list">${[...data.payments].sort((a,b)=>b.createdAt.localeCompare(a.createdAt)).slice(0,12).map(p=>{const customer=data.customers.find(c=>c.id===p.customerId);return `<div class="list-row"><div class="item-avatar">💳</div><div class="grow"><strong>${esc(customer?.name||'مشتری حذف‌شده')}</strong><small>${dateFa(p.createdAt)} · ${p.method==='cash'?'نقدی':'انتقال بانکی'}</small><small>${esc(p.note||'بدون شرح')}</small><span class="tag ${p.status==='void'?'red':'good'}">${p.status==='void'?'باطل شده':money(p.amount)}</span></div>${p.status==='void'?'':`<div class="record-actions"><button class="btn sm outline" data-edit-payment="${esc(p.id)}">ویرایش</button><button class="btn sm danger" data-void-payment="${esc(p.id)}">ابطال</button></div>`}</div>`}).join('')}</div>`:empty('💳','دریافتی ثبت نشده','دریافت‌های مشتریان در این بخش نمایش داده می‌شوند.')}</div>
  </section></div>`;
 }
+
 
 function customerStatementModal(){
  if(!statementCustomerId)return '';
