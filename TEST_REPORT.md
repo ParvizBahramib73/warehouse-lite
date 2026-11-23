@@ -1,4 +1,4 @@
-# Warehouse Lite v0.1.2 — test evidence
+# Warehouse Lite v0.1.3 — test evidence
 
 Date: 2026-11-23
 
@@ -11,17 +11,21 @@ Date: 2026-11-23
 - Receipt editing validates linked invoice totals; receipt voiding preserves the record and removes it from customer balance calculations.
 - Customer balances and daily sales exclude voided documents.
 - Dashboard greets Ali and includes a creator credit linking to Parviz Bahrami's personal website.
+- Branded AliFactor invoice layout identifies Ali and Hamadan as issuer/business location.
+- Invoice PNG generation and native Android Web Share file-sharing path added; text-share/download fallback retained.
+- Invoice print view now includes seller identity, linked receipts and invoice balance.
+- Service Worker cache bumped to v6.
 - PWA shell cache bumped to v5.
 
 ## Executed checks
 
-- GitHub Actions Quality Checks: PASS — 20 tests, 0 failures.
+- GitHub Actions Quality Checks: PASS — 22 tests, 0 failures.
 - JavaScript syntax checks: PASS for domain, data, backup, app, utils, service worker and build script.
 - Static PWA build: PASS.
 - GitHub Pages deployment: PASS.
-- Latest code commit under test: `4a643c8ce43761157652fd6e4f4a0b41be75790d`.
-- Latest successful CI run: https://github.com/ParvizBahramib73/warehouse-lite/actions/runs/45172341387
-- Latest successful Pages deployment: https://github.com/ParvizBahramib73/warehouse-lite/actions/runs/45172341464
+- Latest code commit under test: `PENDING_RELEASE_COMMIT`.
+- Latest successful CI run: https://github.com/ParvizBahramib73/warehouse-lite/actions/runs/PENDING_CI_RUN
+- Latest successful Pages deployment: https://github.com/ParvizBahramib73/warehouse-lite/actions/runs/PENDING_DEPLOY_RUN
 
 ## Not executed or not established
 

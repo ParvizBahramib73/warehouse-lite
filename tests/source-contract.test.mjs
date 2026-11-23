@@ -57,3 +57,16 @@ test('dashboard welcomes Ali and credits the creator with a safe personal-site l
  assert.ok(app.includes('target="_blank"'));
  assert.ok(app.includes('rel="noopener noreferrer"'));
 });
+
+test('invoice share module is included in offline shell and app exposes share controls',()=>{
+ const app=read('src/app.js');
+ const sw=read('sw.js');
+ const share=read('src/invoice-share.js');
+ assert.ok(app.includes("from './invoice-share.js'"));
+ assert.ok(app.includes('data-share-invoice'));
+ assert.ok(app.includes('shareInvoiceFile'));
+ assert.ok(sw.includes('./src/invoice-share.js'));
+ assert.ok(share.includes('navigator.canShare({files:[file]})'));
+ assert.ok(share.includes('navigator.share({files:[file]'));
+ assert.ok(share.includes('علی‌فاکتور'));
+});

@@ -4,7 +4,7 @@ Offline-first Persian PWA prototype for Ali's confectionery-supplies distributio
 
 Designed and developed by [Parviz Bahrami](https://parvizbahramib73.github.io/personal-brand-website).
 
-> **Prototype 0.1.2 — not approved for real accounting yet.** Use synthetic data only until Android device, backup/restore, financial edge-case, and security tests are completed.
+> **Prototype 0.1.3 — not approved for real accounting yet.** Use synthetic data only until Android device, backup/restore, financial edge-case, and security tests are completed.
 
 ## Quick links
 
@@ -20,6 +20,7 @@ Designed and developed by [Parviz Bahrami](https://parvizbahramib73.github.io/pe
 - Static PWA; no server or paid database in the first pilot.
 - IndexedDB stores operational records locally on one primary device.
 - Manual encrypted backup/export and restore/import.
+- Branded AliFactor invoice preview/print and PNG sharing through the Android system share sheet.
 - GitHub stores source code and runs tests; it is **not** the operational database or backup store.
 - Project Pages paths are relative so the app can be hosted at `/warehouse-lite/`.
 
