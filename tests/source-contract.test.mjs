@@ -163,3 +163,28 @@ test('large lists use bounded page rendering, search and IndexedDB indexes',()=>
  assert.ok(css.includes('.pagination'));
  assert.ok(css.includes('.route-cards'));
 });
+
+test('visit workspace supports manual route membership, complete outcomes and invoice handoff',()=>{
+ const app=read('src/app.js');
+ const data=read('src/data.js');
+ const route=read('src/route-planning.js');
+ const backup=read('src/backup.js');
+ assert.ok(app.includes('data-form="route-add"'));
+ assert.ok(app.includes('data-route-add-search'));
+ assert.ok(app.includes('data-visit-remove'));
+ assert.ok(app.includes('data-visit-sale'));
+ assert.ok(app.includes("kind==='route-add'"));
+ assert.ok(app.includes("kind==='visit'"));
+ assert.ok(app.includes("routeName:formVal(form,'routeName')"));
+ assert.ok(app.includes('ثبت فاکتور این مشتری'));
+ assert.ok(app.includes("small_purchase"));
+ assert.ok(app.includes("rescheduled"));
+ assert.ok(app.includes("summarizeRoute(all)"));
+ assert.ok(data.includes("outcome==='cancelled'"));
+ assert.ok(data.includes('routeOrder:existing?.routeOrder??maxOrder+1'));
+ assert.ok(data.includes('visitedAt:'));
+ assert.ok(route.includes("small_purchase:'خرید کم"));
+ assert.ok(route.includes("not_needed:'فعلاً نیاز به خرید نداشت"));
+ assert.ok(backup.includes("'small_purchase'"));
+ assert.ok(backup.includes("'cancelled'"));
+});
