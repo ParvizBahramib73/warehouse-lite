@@ -1,7 +1,7 @@
 import {openDb,readAll,addRecord,updateRecord,setRecordActive,deleteRecord,addPurchase,updatePurchase,voidPurchase,addSale,updateSale,voidSale,addPayment,updatePayment,voidPayment,replaceAll} from './data.js';
 import {asInteger,asDecimalMilli,money,stockLabel,defaultUnitPrice,validateSaleLines,customerBalance,makeId,isoNow} from './domain.js';
 import {encryptBackup,decryptBackup,validateSnapshot,downloadBackup,readBackupFile} from './backup.js';
-import {esc,dateFa,dayFa,todayTehran,optionMarkup} from './utils.js';
+import {esc,dateFa,dayFa,todayTehran,optionMarkup,formatMoneyField} from './utils.js';
 import {shareInvoiceFile,invoicePaidAmount} from './invoice-share.js';
 
 const app=document.getElementById('app');
@@ -36,13 +36,13 @@ function render(){
     <aside class="sidebar">
       <div class="logo"><div class="logo-mark" aria-hidden="true">◈</div><div><strong>انبار من</strong><span>Warehouse Lite</span></div></div>
       <nav class="nav-list" aria-label="بخش‌های برنامه">${tabs.map(([id,label,icon])=>`<button type="button" data-nav="${id}" class="nav ${id===page?'active':''}" ${id===page?'aria-current="page"':''}><span class="nav-icon" aria-hidden="true">${icon}</span>${label}</button>`).join('')}</nav>
-      <div class="side-footer"><strong>نسخه آزمایشی ۰.۱.۳</strong><br/>اطلاعات فقط روی همین دستگاه ذخیره می‌شوند. هر روز پشتیبان تهیه کنید.</div>
+      <div class="side-footer"><strong>نسخه آزمایشی ۰.۱.۴</strong><br/>اطلاعات فقط روی همین دستگاه ذخیره می‌شوند. هر روز پشتیبان تهیه کنید.</div>
     </aside>
     <main class="main">
       <header class="topbar"><div><h1>${titleMap[page]}</h1><div class="top-sub">${subtitleMap[page]}</div></div><div class="top-right"><span class="pill ${online?'ok':'offline'}" id="net-status">${online?'● آماده کار آفلاین':'● بدون اینترنت'}</span><span class="date">${formatDate()}</span></div></header>
       ${page==='dashboard'?dashboard():page==='products'?productsPage():page==='purchases'?purchasesPage():page==='sales'?salesPage():page==='customers'?customersPage():backupPage()}
       <footer class="app-footer">
-        <span>ساخته‌شده برای علی</span>
+        <span>ساخته‌شده برای داداش علی</span>
         <span>طراحی و توسعه:
           <a href="https://parvizbahramib73.github.io/personal-brand-website" target="_blank" rel="noopener noreferrer" aria-label="وب‌سایت شخصی Parviz Bahrami">Parviz Bahrami <span aria-hidden="true">↗</span></a>
         </span>
@@ -50,6 +50,7 @@ function render(){
     </main>
     <nav class="mobile-nav" aria-label="ناوبری موبایل">${[['dashboard','خانه','⌂'],['products','کالا','▦'],['purchases','خرید','↓'],['sales','فروش','↑'],['customers','مشتریان','♙'],['backup','پشتیبان','⚙']].map(([id,l,i])=>`<button type="button" class="mob ${id===page?'active':''}" data-nav="${id}" ${id===page?'aria-current="page"':''}><span aria-hidden="true">${i}</span>${l}</button>`).join('')}</nav>
   </div>${editorModal()}`;
+  app.querySelectorAll('[data-money-input]').forEach(formatMoneyField);
 }
 
 function dashboard(){
@@ -103,7 +104,7 @@ function productsPage(){return `<div class="grid two"><section class="card"><div
  <div class="field"><label for="p-kind">واحد پایه</label><select id="p-kind" name="kind"><option value="piece">عدد</option><option value="gram">کیلوگرم (ذخیره دقیق گرم)</option></select></div>
  <div class="field"><label for="p-pack">مقدار هر بسته (اختیاری)</label><input id="p-pack" name="pack" inputmode="decimal" placeholder="مثلاً ۵ کیلو یا ۱۲ عدد"/><span class="hint">صفر یا خالی یعنی این کالا بسته جداگانه ندارد.</span></div>
  <div class="field"><label for="p-low">حد هشدار موجودی</label><input id="p-low" name="low" inputmode="decimal" value="0" required/><span class="hint">به واحد پایه انتخاب‌شده</span></div>
- <div class="field"><label for="p-price">قیمت فروش پیشنهادی (تومان)</label><input id="p-price" name="salePrice" inputmode="numeric" value="0" required/><span class="hint">به ازای هر کیلو یا هر عدد؛ فاکتور می‌تواند قیمت دیگری داشته باشد.</span></div>
+ <div class="field"><label for="p-price">قیمت فروش پیشنهادی (تومان)</label><input id="p-price" name="salePrice" data-money-input dir="ltr" inputmode="numeric" value="0" required/><span class="hint">به ازای هر کیلو یا هر عدد؛ فاکتور می‌تواند قیمت دیگری داشته باشد.</span></div>
  <div class="form-footer"><button type="submit" class="btn primary full">+ افزودن کالا</button></div>
  </form></section></div>`;}
 
@@ -115,7 +116,7 @@ function purchasesPage(){
  <div class="field"><label>کالا *</label><select name="productId" required id="purchase-product">${optionMarkup(activeProducts,'id','name')}</select></div>
  <div class="field"><label>مقدار *</label><input name="quantity" required inputmode="decimal" placeholder="مثلاً ۱۰ یا ۲٫۵"/></div>
  <div class="field"><label>واحد *</label><select name="unit" id="purchase-unit"><option value="">ابتدا کالا را انتخاب کنید</option></select></div>
- <div class="field"><label>قیمت خرید هر واحد (تومان) *</label><input name="unitPrice" required inputmode="numeric" placeholder="مثلاً ۲۵۰۰۰۰"/></div>
+ <div class="field"><label>قیمت خرید هر واحد (تومان) *</label><input name="unitPrice" data-money-input dir="ltr" required inputmode="numeric" placeholder="مثلاً ۲۵۰۰۰۰"/></div>
  <div class="field"><label>شیوه پرداخت خرید</label><select name="paymentKind"><option value="cash">نقدی</option><option value="transfer">انتقال بانکی</option><option value="credit">نسیه</option><option value="check">چک (ثبت مالی چک هنوز کامل نیست)</option></select></div>
  <div class="form-footer"><button type="submit" class="btn primary full" ${!activeProducts.length||!activeSuppliers.length?'disabled':''}>ثبت قطعی خرید و افزایش موجودی</button></div>
  </form>
@@ -137,7 +138,7 @@ function saleRow(i,row){
  <div class="line-grid"><div class="field"><label>کالا</label><select name="productId" data-sale-product="${i}" required>${availableProducts.length?optionMarkup(availableProducts,'id','name','انتخاب کالا',row.productId):'<option value="">ابتدا کالا تعریف کنید</option>'}</select></div>
  <div class="field"><label>مقدار</label><input name="quantity" required inputmode="decimal" value="${esc(row.quantity)}" placeholder="۱"/></div>
  <div class="field"><label>واحد</label><select name="unit">${p?productUnits(p).map(([v,l])=>opt(v,l,unit)).join(''):'<option value="">—</option>'}</select></div>
- <div class="field"><label>قیمت واحد (تومان)</label><input name="unitPrice" required inputmode="numeric" value="${esc(row.unitPrice)}" placeholder="قیمت دلخواه"/></div></div></div>`;
+ <div class="field"><label>قیمت واحد (تومان)</label><input name="unitPrice" data-money-input dir="ltr" required inputmode="numeric" value="${esc(row.unitPrice)}" placeholder="قیمت دلخواه"/></div></div></div>`;
 }
 
 function salesPage(){
@@ -146,7 +147,7 @@ function salesPage(){
  <form data-form="sale" id="sale-form" data-sale-lines-form><div class="field"><label>مشتری *</label><select name="customerId" required>${optionMarkup(activeCustomers,'id','name','انتخاب مشتری',saleState.customerId)}</select></div><div class="section-split" style="margin:18px 0"></div>
  <div id="sale-lines">${saleRows.map((row,i)=>saleRow(i,row)).join('')}</div><button class="btn outline sm" data-action="add-line" type="button">+ افزودن قلم دیگر</button>
  <div class="line-summary"><span>جمع فاکتور</span><strong class="headline-number" id="sale-total">—</strong></div>
- <div class="form-grid" style="margin-top:18px"><div class="field"><label>مبلغ دریافت اولیه (تومان)</label><input name="paidAmount" inputmode="numeric" value="${esc(saleState.paidAmount)}" required/></div>
+ <div class="form-grid" style="margin-top:18px"><div class="field"><label>مبلغ دریافت اولیه (تومان)</label><input name="paidAmount" data-money-input dir="ltr" inputmode="numeric" value="${esc(saleState.paidAmount)}" required/></div>
  <div class="field"><label>روش دریافت</label><select name="paymentMethod"><option value="cash" ${saleState.paymentMethod==='cash'?'selected':''}>نقدی</option><option value="transfer" ${saleState.paymentMethod==='transfer'?'selected':''}>انتقال بانکی</option></select></div>
  <div class="form-footer"><button class="btn primary full" type="submit" ${!activeProducts.length||!activeCustomers.length?'disabled':''}>تأیید فاکتور و کسر موجودی</button></div></div>
  </form>
@@ -165,7 +166,7 @@ function customersPage(){const customerOptions=data.customers.map(c=>({...c,disp
  <div class="field"><label>یادداشت / نشانی</label><input name="note" maxlength="150"/></div>
  <div class="form-footer"><button type="submit" class="btn primary full">+ ثبت مشتری</button></div></form></div>
  <div class="card"><div class="card-header"><h2>ثبت دریافت وجه</h2></div><form data-form="payment" class="form-grid"><div class="field wide"><label>مشتری *</label><select name="customerId" required>${optionMarkup(customerOptions,'id','displayName')}</select></div>
- <div class="field"><label>مبلغ (تومان)</label><input required name="amount" inputmode="numeric"/></div>
+ <div class="field"><label>مبلغ (تومان)</label><input required name="amount" data-money-input dir="ltr" inputmode="numeric"/></div>
  <div class="field"><label>روش دریافت</label><select name="method"><option value="cash">نقدی</option><option value="transfer">انتقال بانکی</option></select></div>
  <div class="field wide"><label>شرح اختیاری</label><input name="note" maxlength="250" placeholder="مثلاً تسویه بخشی از بدهی"/></div>
  <div class="form-footer"><button type="submit" class="btn outline full" ${!data.customers.length?'disabled':''}>ثبت دریافت و اصلاح مانده</button></div></form></div>
@@ -213,7 +214,7 @@ function editorModal(){
   return `<div class="modal-backdrop" data-editor-backdrop><section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="editor-title"><header class="modal-head"><div><h2 id="editor-title">ویرایش سند خرید</h2><p class="muted small">کالا: ${esc(row.productName)} · ${dateFa(row.createdAt)}</p></div>${close}</header>
   <form data-form="edit-purchase" class="form-grid"><input type="hidden" name="id" value="${esc(row.id)}"><div class="field wide"><label>تأمین‌کننده *</label><select name="supplierId" required>${optionMarkup(supplierOptions,'id','displayName','انتخاب تأمین‌کننده',row.supplierId)}</select></div>
   <div class="field"><label>مقدار *</label><input name="quantity" required inputmode="decimal" value="${esc(quantity)}"></div><div class="field"><label>واحد *</label><select name="unit" required>${product?productUnits(product).map(([v,l])=>opt(v,l,row.unit)).join(''):'<option value="">—</option>'}</select></div>
-  <div class="field"><label>قیمت واحد خرید (تومان) *</label><input name="unitPrice" required inputmode="numeric" value="${row.unitPrice}"></div><div class="field"><label>روش پرداخت</label><select name="paymentKind">${[['cash','نقدی'],['transfer','انتقال بانکی'],['credit','نسیه'],['check','چک']].map(([v,l])=>opt(v,l,row.paymentKind)).join('')}</select></div>
+  <div class="field"><label>قیمت واحد خرید (تومان) *</label><input name="unitPrice" data-money-input dir="ltr" required inputmode="numeric" value="${row.unitPrice}"></div><div class="field"><label>روش پرداخت</label><select name="paymentKind">${[['cash','نقدی'],['transfer','انتقال بانکی'],['credit','نسیه'],['check','چک']].map(([v,l])=>opt(v,l,row.paymentKind)).join('')}</select></div>
   <div class="inline-note warning wide">ویرایش فقط وقتی پذیرفته می‌شود که کاهش مقدار باعث موجودی منفی نشود. سابقه اصلاح در گردش انبار باقی می‌ماند.</div>
   <div class="form-footer"><button class="btn primary full" type="submit">ذخیره اصلاح خرید</button></div></form></section></div>`;
  }
@@ -388,7 +389,11 @@ app.addEventListener('change',event=>{
   if(p)saleRows[idx].unitPrice=String(defaultUnitPrice(p,saleRows[idx].unit));render();updateSaleTotal();
  }
 });
-app.addEventListener('input',event=>{const saleForm=event.target.closest('[data-sale-lines-form]');if(saleForm)updateSaleTotal(saleForm);});
+app.addEventListener('input',event=>{
+ if(event.target.matches('[data-money-input]'))formatMoneyField(event.target);
+ const saleForm=event.target.closest('[data-sale-lines-form]');
+ if(saleForm)updateSaleTotal(saleForm);
+});
 
 app.addEventListener('submit',async(event)=>{
  const form=event.target.closest('[data-form]');if(!form)return;
