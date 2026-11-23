@@ -4,7 +4,7 @@ Responsive, offline-first Persian PWA prototype for Ali's confectionery-supplies
 
 Designed and developed by [Parviz Bahrami](https://parvizbahramib73.github.io/personal-brand-website).
 
-> **Prototype 0.1.7 — not approved for real accounting yet.** Use synthetic data only until Android device, backup/restore, financial edge-case, and security tests are completed.
+> **Prototype 0.1.8 — not approved for real accounting yet.** Use synthetic data only until Android device, backup/restore, financial edge-case, and security tests are completed.
 
 ## Quick links
 
@@ -23,7 +23,11 @@ Designed and developed by [Parviz Bahrami](https://parvizbahramib73.github.io/pe
 - Branded AliFactor invoice preview/print and PNG sharing through the Android system share sheet.
 - Live Persian three-digit grouping in Toman input fields with cursor preservation.
 - Customer search, chronological account statements with running balances, and dashboard follow-up suggestions.
-- District/day visit planning with saved outcomes and follow-up dates.
+- Daily visit planner: weekly customers are preloaded and any other active customer can be manually added to a dated route.
+- Named routes, grouped stops, visit order, remove-from-today without deleting history, and last-visit context.
+- Visit outcomes include full purchase, small/partial purchase, no purchase, unavailable, follow-up, rescheduled, no current need, declined and custom note-required outcomes.
+- Follow-up/reschedule dates automatically bring customers into the matching day's route; daily visit summaries show completed, full/partial purchases, no-sale, follow-up and pending counts.
+- Invoice handoff from customers marked as full/partial purchase; a visit result itself never creates an accounting entry.
 - Estimated gross-profit reporting using weighted-average purchase cost; new invoices keep cost snapshots, while older invoices are reconstructed where purchase history allows.
 - Search and 25-row pagination for product, purchase, supplier, sales, customer, visit and profit lists; IndexedDB v2 adds visit storage and lookup indexes. Legacy v1 encrypted backups remain importable.
 - Faster invoice entry with preserved draft state and focus progression; full-width desktop shell with right-edge sidebar.
