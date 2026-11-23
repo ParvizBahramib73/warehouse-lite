@@ -113,7 +113,7 @@ test('customer account statement and follow-up insights are wired into the app',
  assert.ok(app.includes("from './customer-insights.js'"));
  assert.ok(app.includes('function customerStatementModal()'));
  assert.ok(app.includes('data-customer-statement'));
- assert.ok(app.includes('data-list-search="customers"'));
+ assert.ok(app.includes("listSearch('customers'"));
  assert.ok(app.includes('مشتریان نیازمند پیگیری'));
  assert.ok(sw.includes('./src/customer-insights.js'));
  assert.ok(insights.includes('buildCustomerStatement'));
