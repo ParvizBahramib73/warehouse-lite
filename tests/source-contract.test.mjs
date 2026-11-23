@@ -126,3 +126,40 @@ test('desktop layout spans viewport and sidebar is anchored to the right edge',(
  assert.ok(css.includes('.sidebar{position:sticky;top:0;right:0'));
  assert.ok(css.includes('@media(max-width:760px)'));
 });
+
+test('visit planner and profit reporting are included in the offline application shell',()=>{
+ const app=read('src/app.js');
+ const data=read('src/data.js');
+ const sw=read('sw.js');
+ const route=read('src/route-planning.js');
+ const profit=read('src/profit-report.js');
+ const costing=read('src/costing.js');
+ assert.ok(app.includes("from './route-planning.js'"));
+ assert.ok(app.includes("from './profit-report.js'"));
+ assert.ok(app.includes('function visitsPage()'));
+ assert.ok(app.includes('function profitPage()'));
+ assert.ok(app.includes('data-form="visit"'));
+ assert.ok(app.includes('data-profit-from'));
+ assert.ok(data.includes('export const DB_VERSION = 2'));
+ assert.ok(data.includes("'visits'"));
+ assert.ok(data.includes('export async function saveVisit'));
+ assert.ok(data.includes('snapshotSaleLines(normalized,purchases,now)'));
+ for(const file of ['./src/costing.js','./src/route-planning.js','./src/profit-report.js'])assert.ok(sw.includes(file));
+ assert.ok(route.includes('groupRoutePlan'));
+ assert.ok(profit.includes('buildProfitReport'));
+ assert.ok(costing.includes('weightedPurchaseCost'));
+});
+
+test('large lists use bounded page rendering, search and IndexedDB indexes',()=>{
+ const app=read('src/app.js');
+ const data=read('src/data.js');
+ const css=read('app.css');
+ assert.ok(app.includes('const PAGE_SIZE=25'));
+ for(const key of ['products','purchases','sales','customers'])assert.ok(app.includes("pager('"+key+"'"));
+ assert.ok(app.includes('data-visit-page'));
+ assert.ok(app.includes('data-profit-page'));
+ assert.ok(data.includes("createIndex('byCustomerDate'"));
+ assert.ok(data.includes("createIndex('byCreatedAt'"));
+ assert.ok(css.includes('.pagination'));
+ assert.ok(css.includes('.route-cards'));
+});
