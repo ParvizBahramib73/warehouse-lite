@@ -74,11 +74,11 @@ function canDeleteMaster(type,row){
 }
 function masterActions(type,row,canDelete){
  const archiveDisabled=type==='product'&&row.stockBase>0;
- return \`<div class="record-actions"><button type="button" class="btn sm outline" data-edit-type="\${type}" data-record-id="\${esc(row.id)}">ویرایش</button>\${isActive(row)?\`<button type="button" class="btn sm soft" data-toggle-type="\${type}" data-record-id="\${esc(row.id)}" data-active="false" \${archiveDisabled?'disabled title="ابتدا موجودی را تعیین تکلیف کنید"':''}>غیرفعال</button>\`:\`<button type="button" class="btn sm soft" data-toggle-type="\${type}" data-record-id="\${esc(row.id)}" data-active="true">فعال‌سازی</button>\`}\${canDelete?\`<button type="button" class="btn sm danger" data-delete-type="\${type}" data-record-id="\${esc(row.id)}">حذف دائمی</button>\`:''}</div>\`;
+ return `<div class="record-actions"><button type="button" class="btn sm outline" data-edit-type="${type}" data-record-id="${esc(row.id)}">ویرایش</button>${isActive(row)?`<button type="button" class="btn sm soft" data-toggle-type="${type}" data-record-id="${esc(row.id)}" data-active="false" ${archiveDisabled?'disabled title="ابتدا موجودی را تعیین تکلیف کنید"':''}>غیرفعال</button>`:`<button type="button" class="btn sm soft" data-toggle-type="${type}" data-record-id="${esc(row.id)}" data-active="true">فعال‌سازی</button>`}${canDelete?`<button type="button" class="btn sm danger" data-delete-type="${type}" data-record-id="${esc(row.id)}">حذف دائمی</button>`:''}</div>`;
 }
 
-function productsPage(){return \`<div class="grid two"><section class="card"><div class="card-header"><h2>فهرست کالاها</h2><span class="tag">\${data.products.length} کالا</span></div>
- \${data.products.length?\`<div class="table-wrap"><table class="data-table"><thead><tr><th>کالا</th><th>موجودی</th><th>قیمت پیشنهادی</th><th>وضعیت</th><th>عملیات</th></tr></thead><tbody>\${[...data.products].sort((a,b)=>a.name.localeCompare(b.name,'fa')).map(p=>\`<tr><td class="name-cell"><strong>\${esc(p.name)}</strong><small>\${esc(p.category||'بدون دسته')} · \${esc(p.code||'—')}</small></td><td>\${stockLabel(p)}</td><td>\${money(p.salePrice)} / \${p.kind==='gram'?'کیلو':'عدد'}</td><td><span class="tag \${!isActive(p)?'red':stockTone(p)}">\${!isActive(p)?'غیرفعال':p.stockBase<=p.lowBase?'کم‌موجود':'موجود'}</span></td><td>\${masterActions('product',p,canDeleteMaster('product',p))}</td></tr>\`).join('')}</tbody></table></div>\`:empty('📦','کالایی ثبت نشده','از فرم روبه‌رو شروع کنید.')}</section>
+function productsPage(){return `<div class="grid two"><section class="card"><div class="card-header"><h2>فهرست کالاها</h2><span class="tag">${data.products.length} کالا</span></div>
+ ${data.products.length?`<div class="table-wrap"><table class="data-table"><thead><tr><th>کالا</th><th>موجودی</th><th>قیمت پیشنهادی</th><th>وضعیت</th><th>عملیات</th></tr></thead><tbody>${[...data.products].sort((a,b)=>a.name.localeCompare(b.name,'fa')).map(p=>`<tr><td class="name-cell"><strong>${esc(p.name)}</strong><small>${esc(p.category||'بدون دسته')} · ${esc(p.code||'—')}</small></td><td>${stockLabel(p)}</td><td>${money(p.salePrice)} / ${p.kind==='gram'?'کیلو':'عدد'}</td><td><span class="tag ${!isActive(p)?'red':stockTone(p)}">${!isActive(p)?'غیرفعال':p.stockBase<=p.lowBase?'کم‌موجود':'موجود'}</span></td><td>${masterActions('product',p,canDeleteMaster('product',p))}</td></tr>`).join('')}</tbody></table></div>`:empty('📦','کالایی ثبت نشده','از فرم روبه‌رو شروع کنید.')}</section>
  <section class="card"><div class="card-header"><h2>تعریف کالای جدید</h2></div><form data-form="product" class="form-grid">
  <div class="field wide"><label for="p-name">نام کالا *</label><input id="p-name" name="name" required maxlength="100" placeholder="مثلاً بادکا یا روغن قنادی"/></div>
  <div class="field"><label for="p-code">کد کالا (اختیاری)</label><input id="p-code" name="code" maxlength="30" placeholder="مثلاً OIL-5"/></div>
@@ -88,73 +88,73 @@ function productsPage(){return \`<div class="grid two"><section class="card"><di
  <div class="field"><label for="p-low">حد هشدار موجودی</label><input id="p-low" name="low" inputmode="decimal" value="0" required/><span class="hint">به واحد پایه انتخاب‌شده</span></div>
  <div class="field"><label for="p-price">قیمت فروش پیشنهادی (تومان)</label><input id="p-price" name="salePrice" inputmode="numeric" value="0" required/><span class="hint">به ازای هر کیلو یا هر عدد؛ فاکتور می‌تواند قیمت دیگری داشته باشد.</span></div>
  <div class="form-footer"><button type="submit" class="btn primary full">+ افزودن کالا</button></div>
- </form></section></div>\`;}
+ </form></section></div>`;}
 
 function purchasesPage(){
  const activeProducts=data.products.filter(isActive),activeSuppliers=data.suppliers.filter(isActive);
- return \`<div class="grid two"><section class="card"><div class="card-header"><h2>ثبت خرید و ورود به انبار</h2></div>
+ return `<div class="grid two"><section class="card"><div class="card-header"><h2>ثبت خرید و ورود به انبار</h2></div>
  <form data-form="purchase" class="form-grid">
- <div class="field"><label>تأمین‌کننده *</label><select name="supplierId" required>\${optionMarkup(activeSuppliers,'id','name')}</select></div>
- <div class="field"><label>کالا *</label><select name="productId" required id="purchase-product">\${optionMarkup(activeProducts,'id','name')}</select></div>
+ <div class="field"><label>تأمین‌کننده *</label><select name="supplierId" required>${optionMarkup(activeSuppliers,'id','name')}</select></div>
+ <div class="field"><label>کالا *</label><select name="productId" required id="purchase-product">${optionMarkup(activeProducts,'id','name')}</select></div>
  <div class="field"><label>مقدار *</label><input name="quantity" required inputmode="decimal" placeholder="مثلاً ۱۰ یا ۲٫۵"/></div>
  <div class="field"><label>واحد *</label><select name="unit" id="purchase-unit"><option value="">ابتدا کالا را انتخاب کنید</option></select></div>
  <div class="field"><label>قیمت خرید هر واحد (تومان) *</label><input name="unitPrice" required inputmode="numeric" placeholder="مثلاً ۲۵۰۰۰۰"/></div>
  <div class="field"><label>شیوه پرداخت خرید</label><select name="paymentKind"><option value="cash">نقدی</option><option value="transfer">انتقال بانکی</option><option value="credit">نسیه</option><option value="check">چک (ثبت مالی چک هنوز کامل نیست)</option></select></div>
- <div class="form-footer"><button type="submit" class="btn primary full" \${!activeProducts.length||!activeSuppliers.length?'disabled':''}>ثبت قطعی خرید و افزایش موجودی</button></div>
+ <div class="form-footer"><button type="submit" class="btn primary full" ${!activeProducts.length||!activeSuppliers.length?'disabled':''}>ثبت قطعی خرید و افزایش موجودی</button></div>
  </form>
  <div class="inline-note warning">ویرایش خرید، موجودی را با سند اصلاحی تنظیم می‌کند. ابطال فقط وقتی مجاز است که موجودی فعلی برای برگشت مقدار خرید کافی باشد.</div></section>
  <section class="grid">
  <div class="card"><div class="card-header"><h2>افزودن تأمین‌کننده</h2></div><form data-form="supplier" class="form-grid"><div class="field wide"><label>نام *</label><input name="name" required maxlength="100" placeholder="شرکت یا فروشنده"/></div><div class="field wide"><label>شماره تماس</label><input name="phone" inputmode="tel" maxlength="25" placeholder="اختیاری"/></div><div class="form-footer"><button class="btn outline full" type="submit">+ ثبت تأمین‌کننده</button></div></form></div>
- <div class="card"><div class="card-header"><h2>تأمین‌کنندگان</h2><span class="tag">\${data.suppliers.length}</span></div>
- \${data.suppliers.length?\`<div class="list">\${[...data.suppliers].sort((a,b)=>a.name.localeCompare(b.name,'fa')).map(s=>\`<div class="list-row"><div class="item-avatar">🚚</div><div class="grow"><strong>\${esc(s.name)}</strong><small>\${esc(s.phone||'بدون شماره')}</small>\${!isActive(s)?'<span class="tag red">غیرفعال</span>':''}</div>\${masterActions('supplier',s,canDeleteMaster('supplier',s))}</div>\`).join('')}</div>\`:empty('🚚','تأمین‌کننده‌ای ثبت نشده','از فرم بالا اضافه کنید.')}</div>
- <div class="card"><div class="card-header"><h2>خریدهای اخیر</h2><span class="tag">\${data.purchases.length}</span></div>
- \${data.purchases.length?\`<div class="list">\${[...data.purchases].sort((a,b)=>b.createdAt.localeCompare(a.createdAt)).slice(0,10).map(p=>\`<div class="list-row"><div class="item-avatar">📥</div><div class="grow"><strong>\${esc(p.productName)}</strong><small>\${esc(p.supplierName)} · \${dateFa(p.createdAt)}</small><span class="tag \${p.status==='void'?'red':'good'}">\${p.status==='void'?'باطل شده':money(p.total)}</span></div>\${p.status==='void'?'':\`<div class="record-actions"><button class="btn sm outline" data-edit-purchase="\${esc(p.id)}">ویرایش</button><button class="btn sm danger" data-void-purchase="\${esc(p.id)}">ابطال</button></div>\`}</div>\`).join('')}</div>\`:empty('↓','خریدی ثبت نشده','خرید ثبت‌شده به موجودی اضافه می‌شود.')}</div>
- </section></div>\`;
+ <div class="card"><div class="card-header"><h2>تأمین‌کنندگان</h2><span class="tag">${data.suppliers.length}</span></div>
+ ${data.suppliers.length?`<div class="list">${[...data.suppliers].sort((a,b)=>a.name.localeCompare(b.name,'fa')).map(s=>`<div class="list-row"><div class="item-avatar">🚚</div><div class="grow"><strong>${esc(s.name)}</strong><small>${esc(s.phone||'بدون شماره')}</small>${!isActive(s)?'<span class="tag red">غیرفعال</span>':''}</div>${masterActions('supplier',s,canDeleteMaster('supplier',s))}</div>`).join('')}</div>`:empty('🚚','تأمین‌کننده‌ای ثبت نشده','از فرم بالا اضافه کنید.')}</div>
+ <div class="card"><div class="card-header"><h2>خریدهای اخیر</h2><span class="tag">${data.purchases.length}</span></div>
+ ${data.purchases.length?`<div class="list">${[...data.purchases].sort((a,b)=>b.createdAt.localeCompare(a.createdAt)).slice(0,10).map(p=>`<div class="list-row"><div class="item-avatar">📥</div><div class="grow"><strong>${esc(p.productName)}</strong><small>${esc(p.supplierName)} · ${dateFa(p.createdAt)}</small><span class="tag ${p.status==='void'?'red':'good'}">${p.status==='void'?'باطل شده':money(p.total)}</span></div>${p.status==='void'?'':`<div class="record-actions"><button class="btn sm outline" data-edit-purchase="${esc(p.id)}">ویرایش</button><button class="btn sm danger" data-void-purchase="${esc(p.id)}">ابطال</button></div>`}</div>`).join('')}</div>`:empty('↓','خریدی ثبت نشده','خرید ثبت‌شده به موجودی اضافه می‌شود.')}</div>
+ </section></div>`;
 }
 
 function saleRow(i,row){
  const p=data.products.find(x=>x.id===row.productId);
  const availableProducts=data.products.filter(x=>isActive(x)||x.id===row.productId);
  const unit=row.unit&&productUnits(p).some(x=>x[0]===row.unit)?row.unit:productUnits(p)[0]?.[0]||'';
- return \`<div class="line-form" data-sale-row="\${i}"><div class="line-form-head"><strong class="small">قلم \${new Intl.NumberFormat('fa-IR').format(i+1)}</strong>\${saleRows.length>1?\`<button type="button" class="btn sm danger" data-remove-line="\${i}">حذف قلم</button>\`:''}</div>
- <div class="line-grid"><div class="field"><label>کالا</label><select name="productId" data-sale-product="\${i}" required>\${availableProducts.length?optionMarkup(availableProducts,'id','name','انتخاب کالا',row.productId):'<option value="">ابتدا کالا تعریف کنید</option>'}</select></div>
- <div class="field"><label>مقدار</label><input name="quantity" required inputmode="decimal" value="\${esc(row.quantity)}" placeholder="۱"/></div>
- <div class="field"><label>واحد</label><select name="unit">\${p?productUnits(p).map(([v,l])=>opt(v,l,unit)).join(''):'<option value="">—</option>'}</select></div>
- <div class="field"><label>قیمت واحد (تومان)</label><input name="unitPrice" required inputmode="numeric" value="\${esc(row.unitPrice)}" placeholder="قیمت دلخواه"/></div></div></div>\`;
+ return `<div class="line-form" data-sale-row="${i}"><div class="line-form-head"><strong class="small">قلم ${new Intl.NumberFormat('fa-IR').format(i+1)}</strong>${saleRows.length>1?`<button type="button" class="btn sm danger" data-remove-line="${i}">حذف قلم</button>`:''}</div>
+ <div class="line-grid"><div class="field"><label>کالا</label><select name="productId" data-sale-product="${i}" required>${availableProducts.length?optionMarkup(availableProducts,'id','name','انتخاب کالا',row.productId):'<option value="">ابتدا کالا تعریف کنید</option>'}</select></div>
+ <div class="field"><label>مقدار</label><input name="quantity" required inputmode="decimal" value="${esc(row.quantity)}" placeholder="۱"/></div>
+ <div class="field"><label>واحد</label><select name="unit">${p?productUnits(p).map(([v,l])=>opt(v,l,unit)).join(''):'<option value="">—</option>'}</select></div>
+ <div class="field"><label>قیمت واحد (تومان)</label><input name="unitPrice" required inputmode="numeric" value="${esc(row.unitPrice)}" placeholder="قیمت دلخواه"/></div></div></div>`;
 }
 
 function salesPage(){
  const activeCustomers=data.customers.filter(isActive),activeProducts=data.products.filter(isActive);
- return \`<div class="grid two"><section class="card"><div class="card-header"><h2>صدور فاکتور فروش</h2><span class="tag">موجودی پس از تأیید کم می‌شود</span></div>
- <form data-form="sale" id="sale-form" data-sale-lines-form><div class="field"><label>مشتری *</label><select name="customerId" required>\${optionMarkup(activeCustomers,'id','name','انتخاب مشتری',saleState.customerId)}</select></div><div class="section-split" style="margin:18px 0"></div>
- <div id="sale-lines">\${saleRows.map((row,i)=>saleRow(i,row)).join('')}</div><button class="btn outline sm" data-action="add-line" type="button">+ افزودن قلم دیگر</button>
+ return `<div class="grid two"><section class="card"><div class="card-header"><h2>صدور فاکتور فروش</h2><span class="tag">موجودی پس از تأیید کم می‌شود</span></div>
+ <form data-form="sale" id="sale-form" data-sale-lines-form><div class="field"><label>مشتری *</label><select name="customerId" required>${optionMarkup(activeCustomers,'id','name','انتخاب مشتری',saleState.customerId)}</select></div><div class="section-split" style="margin:18px 0"></div>
+ <div id="sale-lines">${saleRows.map((row,i)=>saleRow(i,row)).join('')}</div><button class="btn outline sm" data-action="add-line" type="button">+ افزودن قلم دیگر</button>
  <div class="line-summary"><span>جمع فاکتور</span><strong class="headline-number" id="sale-total">—</strong></div>
- <div class="form-grid" style="margin-top:18px"><div class="field"><label>مبلغ دریافت اولیه (تومان)</label><input name="paidAmount" inputmode="numeric" value="\${esc(saleState.paidAmount)}" required/></div>
- <div class="field"><label>روش دریافت</label><select name="paymentMethod"><option value="cash" \${saleState.paymentMethod==='cash'?'selected':''}>نقدی</option><option value="transfer" \${saleState.paymentMethod==='transfer'?'selected':''}>انتقال بانکی</option></select></div>
- <div class="form-footer"><button class="btn primary full" type="submit" \${!activeProducts.length||!activeCustomers.length?'disabled':''}>تأیید فاکتور و کسر موجودی</button></div></div>
+ <div class="form-grid" style="margin-top:18px"><div class="field"><label>مبلغ دریافت اولیه (تومان)</label><input name="paidAmount" inputmode="numeric" value="${esc(saleState.paidAmount)}" required/></div>
+ <div class="field"><label>روش دریافت</label><select name="paymentMethod"><option value="cash" ${saleState.paymentMethod==='cash'?'selected':''}>نقدی</option><option value="transfer" ${saleState.paymentMethod==='transfer'?'selected':''}>انتقال بانکی</option></select></div>
+ <div class="form-footer"><button class="btn primary full" type="submit" ${!activeProducts.length||!activeCustomers.length?'disabled':''}>تأیید فاکتور و کسر موجودی</button></div></div>
  </form>
  <div class="inline-note warning">فاکتورهای ثبت‌شده قابل ویرایش‌اند. ابطال فاکتور فقط وقتی مجاز است که دریافت وجه یا تسویه بعدی نامشخصی به آن مشتری مرتبط نباشد.</div></section>
- <section class="card"><div class="card-header"><h2>فاکتورهای ثبت‌شده</h2><span class="tag">\${data.sales.length} فاکتور</span></div>
- \${data.sales.length?\`<div class="list">\${[...data.sales].sort((a,b)=>b.createdAt.localeCompare(a.createdAt)).slice(0,20).map(s=>\`<div class="list-row"><div class="item-avatar">🧾</div><div class="grow"><strong>\${esc(s.customerName)}</strong><small>\${dateFa(s.createdAt)} · \${s.lines.length} قلم</small><small>\${esc(s.invoiceNo)}</small><span class="tag \${s.status==='void'?'red':'good'}">\${s.status==='void'?'باطل شده':money(s.total)}</span></div><div class="record-actions"><button class="btn sm outline" data-invoice="\${esc(s.id)}">چاپ / PDF</button>\${s.status==='void'?'':\`<button class="btn sm outline" data-edit-sale="\${esc(s.id)}">ویرایش</button><button class="btn sm danger" data-void-sale="\${esc(s.id)}">ابطال</button>\`}</div></div>\`).join('')}</div>\`:empty('🧾','فاکتوری ثبت نشده','از فرم روبه‌رو شروع کنید.')}</section></div>\`;
+ <section class="card"><div class="card-header"><h2>فاکتورهای ثبت‌شده</h2><span class="tag">${data.sales.length} فاکتور</span></div>
+ ${data.sales.length?`<div class="list">${[...data.sales].sort((a,b)=>b.createdAt.localeCompare(a.createdAt)).slice(0,20).map(s=>`<div class="list-row"><div class="item-avatar">🧾</div><div class="grow"><strong>${esc(s.customerName)}</strong><small>${dateFa(s.createdAt)} · ${s.lines.length} قلم</small><small>${esc(s.invoiceNo)}</small><span class="tag ${s.status==='void'?'red':'good'}">${s.status==='void'?'باطل شده':money(s.total)}</span></div><div class="record-actions"><button class="btn sm outline" data-invoice="${esc(s.id)}">چاپ / PDF</button>${s.status==='void'?'':`<button class="btn sm outline" data-edit-sale="${esc(s.id)}">ویرایش</button><button class="btn sm danger" data-void-sale="${esc(s.id)}">ابطال</button>`}</div></div>`).join('')}</div>`:empty('🧾','فاکتوری ثبت نشده','از فرم روبه‌رو شروع کنید.')}</section></div>`;
 }
 
 function customersPage(){const customerOptions=data.customers.map(c=>({...c,displayName:c.name+(isActive(c)?'':' (غیرفعال)')}));
- return \`<div class="grid two"><section class="card"><div class="card-header"><h2>فهرست مشتریان و حساب‌ها</h2><span class="tag">\${data.customers.length} مشتری</span></div>
- \${data.customers.length?\`<div class="list">\${[...data.customers].sort((a,b)=>a.name.localeCompare(b.name,'fa')).map(c=>{const balance=customerBalance(c.id,data.sales,data.payments);return \`<div class="list-row"><div class="item-avatar">👤</div><div class="grow"><strong>\${esc(c.name)}</strong><small>\${esc(c.district||'همدان')} · \${esc(c.visitDay||'بدون روز ویزیت')}</small>\${c.phone?\`<a href="tel:\${esc(c.phone)}" class="small" style="color:#008068;text-decoration:none">تماس: <bdi>\${esc(c.phone)}</bdi></a>\`:''}<span class="tag \${isActive(c)?'good':'red'}">\${isActive(c)?'فعال':'غیرفعال'}</span></div><div style="text-align:left"><div class="number" style="color:\${balance>0?'#b15b35':'#197d62'}">\${money(balance)}</div><small class="muted">\${balance>0?'بدهکار':balance<0?'بستانکار':'تسویه'}</small>\${masterActions('customer',c,canDeleteMaster('customer',c))}</div></div>\`}).join('')}</div>\`:empty('👥','مشتری ثبت نشده','مشتریان قنادی‌های شهر همدان را اضافه کنید.')}</section>
+ return `<div class="grid two"><section class="card"><div class="card-header"><h2>فهرست مشتریان و حساب‌ها</h2><span class="tag">${data.customers.length} مشتری</span></div>
+ ${data.customers.length?`<div class="list">${[...data.customers].sort((a,b)=>a.name.localeCompare(b.name,'fa')).map(c=>{const balance=customerBalance(c.id,data.sales,data.payments);return `<div class="list-row"><div class="item-avatar">👤</div><div class="grow"><strong>${esc(c.name)}</strong><small>${esc(c.district||'همدان')} · ${esc(c.visitDay||'بدون روز ویزیت')}</small>${c.phone?`<a href="tel:${esc(c.phone)}" class="small" style="color:#008068;text-decoration:none">تماس: <bdi>${esc(c.phone)}</bdi></a>`:''}<span class="tag ${isActive(c)?'good':'red'}">${isActive(c)?'فعال':'غیرفعال'}</span></div><div style="text-align:left"><div class="number" style="color:${balance>0?'#b15b35':'#197d62'}">${money(balance)}</div><small class="muted">${balance>0?'بدهکار':balance<0?'بستانکار':'تسویه'}</small>${masterActions('customer',c,canDeleteMaster('customer',c))}</div></div>`}).join('')}</div>`:empty('👥','مشتری ثبت نشده','مشتریان قنادی‌های شهر همدان را اضافه کنید.')}</section>
  <section class="grid"><div class="card"><div class="card-header"><h2>افزودن مشتری</h2></div><form data-form="customer" class="form-grid">
  <div class="field wide"><label>نام قنادی یا مشتری *</label><input name="name" required maxlength="100"/></div>
  <div class="field"><label>موبایل یا تلفن</label><input name="phone" inputmode="tel" maxlength="25"/></div><div class="field"><label>محله یا خیابان</label><input name="district" maxlength="80" placeholder="مثلاً مهدیه"/></div>
- <div class="field"><label>روز ویزیت</label><select name="visitDay"><option value="">بدون برنامه</option>\${weekday.map(d=>opt(d,d,'')).join('')}</select></div>
+ <div class="field"><label>روز ویزیت</label><select name="visitDay"><option value="">بدون برنامه</option>${weekday.map(d=>opt(d,d,'')).join('')}</select></div>
  <div class="field"><label>یادداشت / نشانی</label><input name="note" maxlength="150"/></div>
  <div class="form-footer"><button type="submit" class="btn primary full">+ ثبت مشتری</button></div></form></div>
- <div class="card"><div class="card-header"><h2>ثبت دریافت وجه</h2></div><form data-form="payment" class="form-grid"><div class="field wide"><label>مشتری *</label><select name="customerId" required>\${optionMarkup(customerOptions,'id','displayName')}</select></div>
+ <div class="card"><div class="card-header"><h2>ثبت دریافت وجه</h2></div><form data-form="payment" class="form-grid"><div class="field wide"><label>مشتری *</label><select name="customerId" required>${optionMarkup(customerOptions,'id','displayName')}</select></div>
  <div class="field"><label>مبلغ (تومان)</label><input required name="amount" inputmode="numeric"/></div>
  <div class="field"><label>روش دریافت</label><select name="method"><option value="cash">نقدی</option><option value="transfer">انتقال بانکی</option></select></div>
  <div class="field wide"><label>شرح اختیاری</label><input name="note" maxlength="250" placeholder="مثلاً تسویه بخشی از بدهی"/></div>
- <div class="form-footer"><button type="submit" class="btn outline full" \${!data.customers.length?'disabled':''}>ثبت دریافت و اصلاح مانده</button></div></form></div>
- <div class="card"><div class="card-header"><h2>سوابق دریافت وجه</h2><span class="tag">\${data.payments.length}</span></div>
- \${data.payments.length?\`<div class="list">\${[...data.payments].sort((a,b)=>b.createdAt.localeCompare(a.createdAt)).slice(0,12).map(p=>{const customer=data.customers.find(c=>c.id===p.customerId);return \`<div class="list-row"><div class="item-avatar">💳</div><div class="grow"><strong>\${esc(customer?.name||'مشتری حذف‌شده')}</strong><small>\${dateFa(p.createdAt)} · \${p.method==='cash'?'نقدی':'انتقال بانکی'}</small><small>\${esc(p.note||'بدون شرح')}</small><span class="tag \${p.status==='void'?'red':'good'}">\${p.status==='void'?'باطل شده':money(p.amount)}</span></div>\${p.status==='void'?'':\`<div class="record-actions"><button class="btn sm outline" data-edit-payment="\${esc(p.id)}">ویرایش</button><button class="btn sm danger" data-void-payment="\${esc(p.id)}">ابطال</button></div>\`}</div>\`}).join('')}</div>\`:empty('💳','دریافتی ثبت نشده','دریافت‌های مشتریان در این بخش نمایش داده می‌شوند.')}</div>
- </section></div>\`;
+ <div class="form-footer"><button type="submit" class="btn outline full" ${!data.customers.length?'disabled':''}>ثبت دریافت و اصلاح مانده</button></div></form></div>
+ <div class="card"><div class="card-header"><h2>سوابق دریافت وجه</h2><span class="tag">${data.payments.length}</span></div>
+ ${data.payments.length?`<div class="list">${[...data.payments].sort((a,b)=>b.createdAt.localeCompare(a.createdAt)).slice(0,12).map(p=>{const customer=data.customers.find(c=>c.id===p.customerId);return `<div class="list-row"><div class="item-avatar">💳</div><div class="grow"><strong>${esc(customer?.name||'مشتری حذف‌شده')}</strong><small>${dateFa(p.createdAt)} · ${p.method==='cash'?'نقدی':'انتقال بانکی'}</small><small>${esc(p.note||'بدون شرح')}</small><span class="tag ${p.status==='void'?'red':'good'}">${p.status==='void'?'باطل شده':money(p.amount)}</span></div>${p.status==='void'?'':`<div class="record-actions"><button class="btn sm outline" data-edit-payment="${esc(p.id)}">ویرایش</button><button class="btn sm danger" data-void-payment="${esc(p.id)}">ابطال</button></div>`}</div>`}).join('')}</div>`:empty('💳','دریافتی ثبت نشده','دریافت‌های مشتریان در این بخش نمایش داده می‌شوند.')}</div>
+ </section></div>`;
 }
 
 
@@ -167,52 +167,52 @@ function editorModal(){
   const hasHistory=data.movements.some(x=>x.productId===row.id)||data.purchases.some(x=>x.productId===row.id)||data.sales.some(x=>(x.lines||[]).some(line=>line.productId===row.id));
   const low=row.kind==='gram'?String(row.lowBase/1000):String(row.lowBase);
   const pack=row.kind==='gram'?String(row.packBase/1000):String(row.packBase);
-  return \`<div class="modal-backdrop" data-editor-backdrop><section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="editor-title"><header class="modal-head"><div><h2 id="editor-title">ویرایش کالا</h2><p class="muted small">\${esc(row.name)}</p></div>\${close}</header>
-  <form data-form="edit-product" class="form-grid"><input type="hidden" name="id" value="\${esc(row.id)}">
-   <div class="field wide"><label>نام کالا *</label><input name="name" required maxlength="100" value="\${esc(row.name)}"></div>
-   <div class="field"><label>کد کالا</label><input name="code" maxlength="30" value="\${esc(row.code||'')}"></div>
-   <div class="field"><label>دسته‌بندی</label><input name="category" maxlength="60" value="\${esc(row.category||'')}"></div>
-   \${hasHistory?\`<div class="field wide"><div class="inline-note warning">به دلیل وجود سابقه خرید، فروش یا موجودی، واحد پایه و اندازه بسته قفل شده‌اند تا سوابق و موجودی تغییر نکند.</div></div>\`:\`<div class="field"><label>واحد پایه</label><select name="kind"><option value="piece" \${row.kind==='piece'?'selected':''}>عدد</option><option value="gram" \${row.kind==='gram'?'selected':''}>کیلوگرم</option></select></div><div class="field"><label>مقدار هر بسته</label><input name="pack" inputmode="decimal" value="\${pack}"></div>\`}
-   <div class="field"><label>حد هشدار موجودی (\${row.kind==='gram'?'کیلوگرم':'عدد'})</label><input name="low" required inputmode="decimal" value="\${low}"></div>
-   <div class="field"><label>قیمت فروش پیشنهادی (تومان)</label><input name="salePrice" required inputmode="numeric" value="\${row.salePrice}"></div>
+  return `<div class="modal-backdrop" data-editor-backdrop><section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="editor-title"><header class="modal-head"><div><h2 id="editor-title">ویرایش کالا</h2><p class="muted small">${esc(row.name)}</p></div>${close}</header>
+  <form data-form="edit-product" class="form-grid"><input type="hidden" name="id" value="${esc(row.id)}">
+   <div class="field wide"><label>نام کالا *</label><input name="name" required maxlength="100" value="${esc(row.name)}"></div>
+   <div class="field"><label>کد کالا</label><input name="code" maxlength="30" value="${esc(row.code||'')}"></div>
+   <div class="field"><label>دسته‌بندی</label><input name="category" maxlength="60" value="${esc(row.category||'')}"></div>
+   ${hasHistory?`<div class="field wide"><div class="inline-note warning">به دلیل وجود سابقه خرید، فروش یا موجودی، واحد پایه و اندازه بسته قفل شده‌اند تا سوابق و موجودی تغییر نکند.</div></div>`:`<div class="field"><label>واحد پایه</label><select name="kind"><option value="piece" ${row.kind==='piece'?'selected':''}>عدد</option><option value="gram" ${row.kind==='gram'?'selected':''}>کیلوگرم</option></select></div><div class="field"><label>مقدار هر بسته</label><input name="pack" inputmode="decimal" value="${pack}"></div>`}
+   <div class="field"><label>حد هشدار موجودی (${row.kind==='gram'?'کیلوگرم':'عدد'})</label><input name="low" required inputmode="decimal" value="${low}"></div>
+   <div class="field"><label>قیمت فروش پیشنهادی (تومان)</label><input name="salePrice" required inputmode="numeric" value="${row.salePrice}"></div>
    <div class="form-footer"><button class="btn primary full" type="submit">ذخیره تغییرات</button></div>
-  </form></section></div>\`;
+  </form></section></div>`;
  }
  if(editor.type==='supplier'){
-  return \`<div class="modal-backdrop" data-editor-backdrop><section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="editor-title"><header class="modal-head"><div><h2 id="editor-title">ویرایش تأمین‌کننده</h2></div>\${close}</header>
-  <form data-form="edit-supplier" class="form-grid"><input type="hidden" name="id" value="\${esc(row.id)}"><div class="field wide"><label>نام *</label><input name="name" required maxlength="100" value="\${esc(row.name)}"></div><div class="field wide"><label>شماره تماس</label><input name="phone" maxlength="25" value="\${esc(row.phone||'')}"></div><div class="form-footer"><button class="btn primary full" type="submit">ذخیره تغییرات</button></div></form></section></div>\`;
+  return `<div class="modal-backdrop" data-editor-backdrop><section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="editor-title"><header class="modal-head"><div><h2 id="editor-title">ویرایش تأمین‌کننده</h2></div>${close}</header>
+  <form data-form="edit-supplier" class="form-grid"><input type="hidden" name="id" value="${esc(row.id)}"><div class="field wide"><label>نام *</label><input name="name" required maxlength="100" value="${esc(row.name)}"></div><div class="field wide"><label>شماره تماس</label><input name="phone" maxlength="25" value="${esc(row.phone||'')}"></div><div class="form-footer"><button class="btn primary full" type="submit">ذخیره تغییرات</button></div></form></section></div>`;
  }
  if(editor.type==='customer'){
-  return \`<div class="modal-backdrop" data-editor-backdrop><section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="editor-title"><header class="modal-head"><div><h2 id="editor-title">ویرایش مشتری</h2></div>\${close}</header>
-  <form data-form="edit-customer" class="form-grid"><input type="hidden" name="id" value="\${esc(row.id)}"><div class="field wide"><label>نام قنادی یا مشتری *</label><input name="name" required maxlength="100" value="\${esc(row.name)}"></div>
-  <div class="field"><label>موبایل یا تلفن</label><input name="phone" inputmode="tel" maxlength="25" value="\${esc(row.phone||'')}"></div><div class="field"><label>محله یا خیابان</label><input name="district" maxlength="80" value="\${esc(row.district||'')}"></div>
-  <div class="field"><label>روز ویزیت</label><select name="visitDay"><option value="">بدون برنامه</option>\${weekday.map(d=>opt(d,d,row.visitDay||'')).join('')}</select></div><div class="field"><label>یادداشت / نشانی</label><input name="note" maxlength="150" value="\${esc(row.note||'')}"></div>
-  <div class="form-footer"><button class="btn primary full" type="submit">ذخیره تغییرات</button></div></form></section></div>\`;
+  return `<div class="modal-backdrop" data-editor-backdrop><section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="editor-title"><header class="modal-head"><div><h2 id="editor-title">ویرایش مشتری</h2></div>${close}</header>
+  <form data-form="edit-customer" class="form-grid"><input type="hidden" name="id" value="${esc(row.id)}"><div class="field wide"><label>نام قنادی یا مشتری *</label><input name="name" required maxlength="100" value="${esc(row.name)}"></div>
+  <div class="field"><label>موبایل یا تلفن</label><input name="phone" inputmode="tel" maxlength="25" value="${esc(row.phone||'')}"></div><div class="field"><label>محله یا خیابان</label><input name="district" maxlength="80" value="${esc(row.district||'')}"></div>
+  <div class="field"><label>روز ویزیت</label><select name="visitDay"><option value="">بدون برنامه</option>${weekday.map(d=>opt(d,d,row.visitDay||'')).join('')}</select></div><div class="field"><label>یادداشت / نشانی</label><input name="note" maxlength="150" value="${esc(row.note||'')}"></div>
+  <div class="form-footer"><button class="btn primary full" type="submit">ذخیره تغییرات</button></div></form></section></div>`;
  }
  if(editor.type==='purchase'){
   const product=data.products.find(x=>x.id===row.productId);
   const supplierOptions=data.suppliers.map(s=>({...s,displayName:s.name+(isActive(s)?'':' (غیرفعال)')}));
   const quantity=row.quantity||String(row.quantityBase);
-  return \`<div class="modal-backdrop" data-editor-backdrop><section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="editor-title"><header class="modal-head"><div><h2 id="editor-title">ویرایش سند خرید</h2><p class="muted small">کالا: \${esc(row.productName)} · \${dateFa(row.createdAt)}</p></div>\${close}</header>
-  <form data-form="edit-purchase" class="form-grid"><input type="hidden" name="id" value="\${esc(row.id)}"><div class="field wide"><label>تأمین‌کننده *</label><select name="supplierId" required>\${optionMarkup(supplierOptions,'id','displayName','انتخاب تأمین‌کننده',row.supplierId)}</select></div>
-  <div class="field"><label>مقدار *</label><input name="quantity" required inputmode="decimal" value="\${esc(quantity)}"></div><div class="field"><label>واحد *</label><select name="unit" required>\${product?productUnits(product).map(([v,l])=>opt(v,l,row.unit)).join(''):'<option value="">—</option>'}</select></div>
-  <div class="field"><label>قیمت واحد خرید (تومان) *</label><input name="unitPrice" required inputmode="numeric" value="\${row.unitPrice}"></div><div class="field"><label>روش پرداخت</label><select name="paymentKind">\${[['cash','نقدی'],['transfer','انتقال بانکی'],['credit','نسیه'],['check','چک']].map(([v,l])=>opt(v,l,row.paymentKind)).join('')}</select></div>
+  return `<div class="modal-backdrop" data-editor-backdrop><section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="editor-title"><header class="modal-head"><div><h2 id="editor-title">ویرایش سند خرید</h2><p class="muted small">کالا: ${esc(row.productName)} · ${dateFa(row.createdAt)}</p></div>${close}</header>
+  <form data-form="edit-purchase" class="form-grid"><input type="hidden" name="id" value="${esc(row.id)}"><div class="field wide"><label>تأمین‌کننده *</label><select name="supplierId" required>${optionMarkup(supplierOptions,'id','displayName','انتخاب تأمین‌کننده',row.supplierId)}</select></div>
+  <div class="field"><label>مقدار *</label><input name="quantity" required inputmode="decimal" value="${esc(quantity)}"></div><div class="field"><label>واحد *</label><select name="unit" required>${product?productUnits(product).map(([v,l])=>opt(v,l,row.unit)).join(''):'<option value="">—</option>'}</select></div>
+  <div class="field"><label>قیمت واحد خرید (تومان) *</label><input name="unitPrice" required inputmode="numeric" value="${row.unitPrice}"></div><div class="field"><label>روش پرداخت</label><select name="paymentKind">${[['cash','نقدی'],['transfer','انتقال بانکی'],['credit','نسیه'],['check','چک']].map(([v,l])=>opt(v,l,row.paymentKind)).join('')}</select></div>
   <div class="inline-note warning wide">ویرایش فقط وقتی پذیرفته می‌شود که کاهش مقدار باعث موجودی منفی نشود. سابقه اصلاح در گردش انبار باقی می‌ماند.</div>
-  <div class="form-footer"><button class="btn primary full" type="submit">ذخیره اصلاح خرید</button></div></form></section></div>\`;
+  <div class="form-footer"><button class="btn primary full" type="submit">ذخیره اصلاح خرید</button></div></form></section></div>`;
  }
  if(editor.type==='sale'){
   const customer=data.customers.find(x=>x.id===row.customerId);
-  return \`<div class="modal-backdrop" data-editor-backdrop><section class="modal-card wide-modal" role="dialog" aria-modal="true" aria-labelledby="editor-title"><header class="modal-head"><div><h2 id="editor-title">ویرایش فاکتور فروش</h2><p class="muted small">\${esc(row.invoiceNo)} · مشتری: \${esc(customer?.name||row.customerName)}</p></div>\${close}</header>
-  <form data-form="edit-sale" id="sale-edit-form" data-sale-lines-form><input type="hidden" name="id" value="\${esc(row.id)}"><input type="hidden" name="customerId" value="\${esc(row.customerId)}">
-  <div id="sale-edit-lines">\${saleRows.map((line,i)=>saleRow(i,line)).join('')}</div><button class="btn outline sm" data-action="add-line" type="button">+ افزودن قلم دیگر</button>
+  return `<div class="modal-backdrop" data-editor-backdrop><section class="modal-card wide-modal" role="dialog" aria-modal="true" aria-labelledby="editor-title"><header class="modal-head"><div><h2 id="editor-title">ویرایش فاکتور فروش</h2><p class="muted small">${esc(row.invoiceNo)} · مشتری: ${esc(customer?.name||row.customerName)}</p></div>${close}</header>
+  <form data-form="edit-sale" id="sale-edit-form" data-sale-lines-form><input type="hidden" name="id" value="${esc(row.id)}"><input type="hidden" name="customerId" value="${esc(row.customerId)}">
+  <div id="sale-edit-lines">${saleRows.map((line,i)=>saleRow(i,line)).join('')}</div><button class="btn outline sm" data-action="add-line" type="button">+ افزودن قلم دیگر</button>
   <div class="line-summary"><span>جمع جدید فاکتور</span><strong class="headline-number" id="sale-edit-total">—</strong></div>
   <div class="inline-note warning">مشتری و دریافت‌های قبلی تغییر نمی‌کنند. اگر مبلغ جدید از دریافت ثبت‌شده کمتر باشد، ویرایش رد می‌شود. گردش موجودی با اسناد اصلاحی ثبت خواهد شد.</div>
-  <div class="form-footer"><button class="btn primary full" type="submit">ذخیره فاکتور اصلاح‌شده</button></div></form></section></div>\`;
+  <div class="form-footer"><button class="btn primary full" type="submit">ذخیره فاکتور اصلاح‌شده</button></div></form></section></div>`;
  }
  if(editor.type==='payment'){
   const customer=data.customers.find(x=>x.id===row.customerId);
-  return \`<div class="modal-backdrop" data-editor-backdrop><section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="editor-title"><header class="modal-head"><div><h2 id="editor-title">ویرایش دریافت وجه</h2><p class="muted small">مشتری: \${esc(customer?.name||'—')}</p></div>\${close}</header>
-  <form data-form="edit-payment" class="form-grid"><input type="hidden" name="id" value="\${esc(row.id)}"><div class="field"><label>مبلغ (تومان) *</label><input name="amount" required inputmode="numeric" value="\${row.amount}"></div><div class="field"><label>روش دریافت</label><select name="method"><option value="cash" \${row.method==='cash'?'selected':''}>نقدی</option><option value="transfer" \${row.method==='transfer'?'selected':''}>انتقال بانکی</option></select></div><div class="field wide"><label>شرح</label><input name="note" maxlength="250" value="\${esc(row.note||'')}"></div><div class="inline-note warning wide">این تغییر مانده حساب مشتری را به‌روزرسانی می‌کند. اگر دریافت به فاکتور مشخصی وصل باشد، مبلغ نباید از مبلغ آن فاکتور بیشتر شود.</div><div class="form-footer"><button class="btn primary full" type="submit">ذخیره دریافت</button></div></form></section></div>\`;
+  return `<div class="modal-backdrop" data-editor-backdrop><section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="editor-title"><header class="modal-head"><div><h2 id="editor-title">ویرایش دریافت وجه</h2><p class="muted small">مشتری: ${esc(customer?.name||'—')}</p></div>${close}</header>
+  <form data-form="edit-payment" class="form-grid"><input type="hidden" name="id" value="${esc(row.id)}"><div class="field"><label>مبلغ (تومان) *</label><input name="amount" required inputmode="numeric" value="${row.amount}"></div><div class="field"><label>روش دریافت</label><select name="method"><option value="cash" ${row.method==='cash'?'selected':''}>نقدی</option><option value="transfer" ${row.method==='transfer'?'selected':''}>انتقال بانکی</option></select></div><div class="field wide"><label>شرح</label><input name="note" maxlength="250" value="${esc(row.note||'')}"></div><div class="inline-note warning wide">این تغییر مانده حساب مشتری را به‌روزرسانی می‌کند. اگر دریافت به فاکتور مشخصی وصل باشد، مبلغ نباید از مبلغ آن فاکتور بیشتر شود.</div><div class="form-footer"><button class="btn primary full" type="submit">ذخیره دریافت</button></div></form></section></div>`;
  }
  return '';
 }
@@ -296,7 +296,7 @@ app.addEventListener('click',async(event)=>{
  }
  const del=event.target.closest('[data-delete-type]');if(del){
   const type=del.dataset.deleteType,id=del.dataset.recordId,table=({product:'products',supplier:'suppliers',customer:'customers'})[type],row=data[table].find(x=>x.id===id);
-  if(!confirm(\`حذف دائمی «\${row?.name||'این رکورد'}»؟ این عملیات فقط برای رکورد بدون سابقه مجاز است.\`))return;
+  if(!confirm(`حذف دائمی «${row?.name||'این رکورد'}»؟ این عملیات فقط برای رکورد بدون سابقه مجاز است.`))return;
   try{await deleteRecord(db,table,id);await refresh();notify('رکورد حذف شد.');}catch(e){notify(e.message,'error');}return;
  }
  const editPurchase=event.target.closest('[data-edit-purchase]');if(editPurchase){openEditor('purchase',editPurchase.dataset.editPurchase);return;}
