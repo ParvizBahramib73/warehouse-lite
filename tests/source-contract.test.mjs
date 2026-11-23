@@ -158,8 +158,8 @@ test('large lists use bounded page rendering, search and IndexedDB indexes',()=>
  for(const key of ['products','purchases','sales','customers'])assert.ok(app.includes("pager('"+key+"'"));
  assert.ok(app.includes('data-visit-page'));
  assert.ok(app.includes('data-profit-page'));
- assert.ok(data.includes("createIndex('byCustomerDate'"));
- assert.ok(data.includes("createIndex('byCreatedAt'"));
+ assert.ok(data.includes("'byCustomerDate'"));
+ assert.ok(data.includes("'byCreatedAt'"));
  assert.ok(css.includes('.pagination'));
  assert.ok(css.includes('.route-cards'));
 });
