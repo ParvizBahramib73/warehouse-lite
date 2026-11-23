@@ -31,7 +31,7 @@ export function validateSnapshot(snapshot) {
     for(const line of row.lines)if(!products.has(line.productId)||!Number.isSafeInteger(line.amount)||line.amount<0)throw new Error('قلم فاکتور نامعتبر است.');
   }
   for(const row of snapshot.payments)if(!customers.has(row.customerId)||!Number.isSafeInteger(row.amount)||row.amount<0)throw new Error('دریافت وجه نامعتبر است.');
-  for(const row of rowsFor('visits'))if(!customers.has(row.customerId)||!/^\\d{4}-\\d{2}-\\d{2}$/.test(row.plannedDate)||!['planned','purchased','no_purchase','unavailable','follow_up'].includes(row.outcome)||String(row.note||'').length>500)throw new Error('سابقه مراجعه نامعتبر است.');
+  for(const row of rowsFor('visits'))if(!customers.has(row.customerId)||!/^\d{4}-\d{2}-\d{2}$/.test(row.plannedDate)||!['planned','purchased','no_purchase','unavailable','follow_up'].includes(row.outcome)||String(row.note||'').length>500)throw new Error('سابقه مراجعه نامعتبر است.');
   for(const sale of snapshot.sales)for(const line of sale.lines)if(line.costAmount!==undefined&&line.costAmount!==null&&(!Number.isSafeInteger(line.costAmount)||line.costAmount<0))throw new Error('بهای تمام‌شده فاکتور نامعتبر است.');
   return Object.fromEntries(TABLES.map(t=>[t,rowsFor(t).length]));
 }
