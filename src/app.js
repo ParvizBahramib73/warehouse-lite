@@ -2,6 +2,7 @@ import {openDb,readAll,addRecord,updateRecord,setRecordActive,deleteRecord,addPu
 import {asInteger,asDecimalMilli,money,stockLabel,defaultUnitPrice,validateSaleLines,customerBalance,makeId,isoNow} from './domain.js';
 import {encryptBackup,decryptBackup,validateSnapshot,downloadBackup,readBackupFile} from './backup.js';
 import {esc,dateFa,dayFa,todayTehran,optionMarkup} from './utils.js';
+import {shareInvoiceFile,invoicePaidAmount} from './invoice-share.js';
 
 const app=document.getElementById('app');
 let db, data, page='dashboard', toastTimer, importCandidate=null, importWrapper=null, saleRows=[{productId:'',unit:'',quantity:'1',unitPrice:''}];
@@ -35,7 +36,7 @@ function render(){
     <aside class="sidebar">
       <div class="logo"><div class="logo-mark" aria-hidden="true">◈</div><div><strong>انبار من</strong><span>Warehouse Lite</span></div></div>
       <nav class="nav-list" aria-label="بخش‌های برنامه">${tabs.map(([id,label,icon])=>`<button type="button" data-nav="${id}" class="nav ${id===page?'active':''}" ${id===page?'aria-current="page"':''}><span class="nav-icon" aria-hidden="true">${icon}</span>${label}</button>`).join('')}</nav>
-      <div class="side-footer"><strong>نسخه آزمایشی ۰.۱.۲</strong><br/>اطلاعات فقط روی همین دستگاه ذخیره می‌شوند. هر روز پشتیبان تهیه کنید.</div>
+      <div class="side-footer"><strong>نسخه آزمایشی ۰.۱.۳</strong><br/>اطلاعات فقط روی همین دستگاه ذخیره می‌شوند. هر روز پشتیبان تهیه کنید.</div>
     </aside>
     <main class="main">
       <header class="topbar"><div><h1>${titleMap[page]}</h1><div class="top-sub">${subtitleMap[page]}</div></div><div class="top-right"><span class="pill ${online?'ok':'offline'}" id="net-status">${online?'● آماده کار آفلاین':'● بدون اینترنت'}</span><span class="date">${formatDate()}</span></div></header>
@@ -73,7 +74,7 @@ function dashboard(){
   </div>
   <div class="quick-actions"><button class="quick" data-nav="sales"><span>🧾</span> ثبت فروش جدید</button><button class="quick" data-nav="purchases"><span>📦</span> ورود کالا</button><button class="quick" data-nav="customers"><span>👤</span> مدیریت مشتری</button></div>
   <div class="grid two"><section class="card"><div class="card-header"><h2>آخرین فاکتورهای فروش</h2><button class="btn sm outline" data-nav="sales">مشاهده همه</button></div>
-  ${latest.length?`<div class="table-wrap"><table class="data-table"><thead><tr><th>مشتری</th><th>مبلغ</th><th>زمان</th><th>فاکتور</th></tr></thead><tbody>${latest.map(s=>`<tr><td class="name-cell"><strong>${esc(s.customerName)}</strong><small>${esc(s.invoiceNo)}</small></td><td>${money(s.total)}</td><td>${dateFa(s.createdAt)}</td><td><button class="btn outline sm" data-invoice="${esc(s.id)}">چاپ / PDF</button></td></tr>`).join('')}</tbody></table></div>`:empty('🧾','هنوز فاکتوری صادر نشده است.','برای شروع، کالا و مشتری تعریف کنید.')}</section>
+  ${latest.length?`<div class="table-wrap"><table class="data-table"><thead><tr><th>مشتری</th><th>مبلغ</th><th>زمان</th><th>فاکتور</th></tr></thead><tbody>${latest.map(s=>`<tr><td class="name-cell"><strong>${esc(s.customerName)}</strong><small>${esc(s.invoiceNo)}</small></td><td>${money(s.total)}</td><td>${dateFa(s.createdAt)}</td><td><div class="record-actions"><button class="btn outline sm" data-invoice="${esc(s.id)}">چاپ / PDF</button><button class="btn sm primary" data-share-invoice="${esc(s.id)}">ارسال فاکتور</button></div></td></tr>`).join('')}</tbody></table></div>`:empty('🧾','هنوز فاکتوری صادر نشده است.','برای شروع، کالا و مشتری تعریف کنید.')}</section>
   <section class="card"><div class="card-header"><h2>کالاهای نیازمند تأمین</h2><span class="tag ${low.length?'low':'good'}">${low.length} مورد</span></div>
   ${low.length?`<div class="list">${low.slice(0,7).map(p=>`<div class="list-row"><div class="item-avatar">📦</div><div class="grow"><strong>${esc(p.name)}</strong><small>حد هشدار: ${stockLabel(p,p.lowBase)}</small></div><span class="tag low">${stockLabel(p)}</span></div>`).join('')}</div>`:empty('✓','همه‌چیز مرتب است.','در حال حاضر کالای کم‌موجود ندارید.')}</section></div>
   ${!data.products.length?`<div class="inline-note warning">برای شروع می‌توانید چند کالای واقعی ثبت کنید، یا فقط برای آزمایش رابط، <button class="btn sm soft" data-action="demo">داده‌های نمونه ایجاد کنید</button>. داده نمونه را با اطلاعات واقعی مخلوط نکنید.</div>`:''}`;
@@ -151,7 +152,7 @@ function salesPage(){
  </form>
  <div class="inline-note warning">فاکتورهای ثبت‌شده قابل ویرایش‌اند. ابطال فاکتور فقط وقتی مجاز است که دریافت وجه یا تسویه بعدی نامشخصی به آن مشتری مرتبط نباشد.</div></section>
  <section class="card"><div class="card-header"><h2>فاکتورهای ثبت‌شده</h2><span class="tag">${data.sales.length} فاکتور</span></div>
- ${data.sales.length?`<div class="list">${[...data.sales].sort((a,b)=>b.createdAt.localeCompare(a.createdAt)).slice(0,20).map(s=>`<div class="list-row"><div class="item-avatar">🧾</div><div class="grow"><strong>${esc(s.customerName)}</strong><small>${dateFa(s.createdAt)} · ${s.lines.length} قلم</small><small>${esc(s.invoiceNo)}</small><span class="tag ${s.status==='void'?'red':'good'}">${s.status==='void'?'باطل شده':money(s.total)}</span></div><div class="record-actions"><button class="btn sm outline" data-invoice="${esc(s.id)}">چاپ / PDF</button>${s.status==='void'?'':`<button class="btn sm outline" data-edit-sale="${esc(s.id)}">ویرایش</button><button class="btn sm danger" data-void-sale="${esc(s.id)}">ابطال</button>`}</div></div>`).join('')}</div>`:empty('🧾','فاکتوری ثبت نشده','از فرم روبه‌رو شروع کنید.')}</section></div>`;
+ ${data.sales.length?`<div class="list">${[...data.sales].sort((a,b)=>b.createdAt.localeCompare(a.createdAt)).slice(0,20).map(s=>`<div class="list-row"><div class="item-avatar">🧾</div><div class="grow"><strong>${esc(s.customerName)}</strong><small>${dateFa(s.createdAt)} · ${s.lines.length} قلم</small><small>${esc(s.invoiceNo)}</small><span class="tag ${s.status==='void'?'red':'good'}">${s.status==='void'?'باطل شده':money(s.total)}</span></div><div class="record-actions"><button class="btn sm outline" data-invoice="${esc(s.id)}">چاپ / PDF</button><button class="btn sm primary" data-share-invoice="${esc(s.id)}">ارسال فاکتور</button>${s.status==='void'?'':`<button class="btn sm outline" data-edit-sale="${esc(s.id)}">ویرایش</button><button class="btn sm danger" data-void-sale="${esc(s.id)}">ابطال</button>`}</div></div>`).join('')}</div>`:empty('🧾','فاکتوری ثبت نشده','از فرم روبه‌رو شروع کنید.')}</section></div>`;
 }
 
 function customersPage(){const customerOptions=data.customers.map(c=>({...c,displayName:c.name+(isActive(c)?'':' (غیرفعال)')}));
@@ -285,10 +286,15 @@ function updateSaleTotal(form){
  }catch(e){const output=target.id==='sale-edit-form'?$('#sale-edit-total'):$('#sale-total');if(output)output.textContent=e.message.includes('موجودی')?'موجودی ناکافی':'—';}
 }
 
-function invoicePopup(id){const sale=data.sales.find(s=>s.id===id);if(!sale)return notify('فاکتور یافت نشد.','error');
+function invoicePopup(id){
+ const sale=data.sales.find(s=>s.id===id);if(!sale)return notify('فاکتور یافت نشد.','error');
  const win=window.open('','_blank');if(!win)return notify('مرورگر اجازه بازکردن پنجره چاپ را نداد.','error');
- const rowHtml=sale.lines.map((line,i)=>`<tr><td>${i+1}</td><td>${esc(line.productName)}</td><td>${esc(line.quantity)} ${line.unit==='kg'?'کیلو':line.unit==='pack'?'بسته':'عدد'}</td><td>${money(line.unitPrice)}</td><td>${money(line.amount)}</td></tr>`).join('');
- const html=`<!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>فاکتور ${esc(sale.invoiceNo)}</title><style>body{font-family:Tahoma,sans-serif;color:#172c38;padding:25px;line-height:1.8}header{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #148c72;padding-bottom:20px}h1{margin:0;font-size:24px}table{width:100%;border-collapse:collapse;margin-top:26px;text-align:right}td,th{border:1px solid #ddd;padding:10px;font-size:13px}th{background:#eff6f2}.total{font-size:19px;font-weight:bold;text-align:left;margin-top:25px}.muted{color:#60747c}.no-print{padding:10px;background:#eaf7f1;border:0;border-radius:7px;cursor:pointer;margin:20px 0} @media print{.no-print{display:none}body{padding:5px}}</style></head><body><header><div><h1>صورتحساب فروش</h1><div class="muted">Warehouse Lite · نسخه آزمایشی</div></div><div style="text-align:left">شماره: <b>${esc(sale.invoiceNo)}</b><br/>تاریخ: ${dayFa(sale.createdAt)}</div></header>${sale.status==='void'?'<div style="margin:18px 0;padding:12px;background:#fff0f0;color:#a33;border-radius:8px;font-weight:bold">این فاکتور باطل شده است و فقط برای مشاهده سابقه نمایش داده می‌شود.</div>':''}<p>مشتری: <strong>${esc(sale.customerName)}</strong></p><table><thead><tr><th>ردیف</th><th>شرح کالا</th><th>مقدار</th><th>قیمت واحد</th><th>جمع</th></tr></thead><tbody>${rowHtml}</tbody></table><div class="total">جمع فاکتور: ${money(sale.total)}</div><p class="muted">این سند توسط نسخه آزمایشی تهیه شده است. پیش از استفاده رسمی اطلاعات را بررسی کنید.</p><button class="no-print" onclick="window.print()">چاپ / ذخیره PDF</button></body></html>`;
+ const paid=invoicePaidAmount(sale,data.payments),remaining=Math.max(0,sale.total-paid);
+ const rowHtml=sale.lines.map((line,i)=>'<tr><td>'+(i+1)+'</td><td>'+esc(line.productName)+'</td><td>'+esc(line.quantity)+' '+(line.unit==='kg'?'کیلو':line.unit==='pack'?'بسته':'عدد')+'</td><td>'+money(line.unitPrice)+'</td><td>'+money(line.amount)+'</td></tr>').join('');
+ const voidBanner=sale.status==='void'?'<div class="void">این فاکتور باطل شده است و فقط برای مشاهده سابقه نمایش داده می‌شود.</div>':'';
+ const html='<!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>علی‌فاکتور '+esc(sale.invoiceNo)+'</title><style>'+
+ ':root{font-family:Tahoma,"Noto Naskh Arabic",Arial,sans-serif;color:#19333b;background:#f4f8f6}*{box-sizing:border-box}body{margin:0;padding:28px;line-height:1.9}.sheet{max-width:900px;margin:0 auto;background:#fff;border:1px solid #e2eae6;border-radius:18px;overflow:hidden}.brand{background:linear-gradient(120deg,#173642,#176b61,#148b72);color:#fff;padding:28px 34px;display:flex;justify-content:space-between;gap:20px;align-items:center}.brand h1{margin:0;font-size:28px}.brand p{margin:3px 0 0;color:#d7f1e8}.meta{text-align:left;font-size:13px;line-height:2;color:#e9f7f2}.content{padding:26px 34px}.seller{color:#57706e;font-size:13px;margin:0 0 15px}.customer{background:#f2f8f5;border:1px solid #e0eee7;padding:12px 16px;border-radius:10px;margin-bottom:18px}table{width:100%;border-collapse:collapse;text-align:right;margin-top:12px}td,th{border-bottom:1px solid #e7eeea;padding:11px 9px;font-size:13px}th{background:#eef6f2;color:#42605a}.summary{margin:22px 0 0 auto;max-width:390px;background:#f6faf8;border-radius:12px;padding:14px 18px}.summary div{display:flex;justify-content:space-between;gap:20px;padding:5px 0}.summary .grand{font-size:18px;font-weight:bold;color:#087a62;border-top:1px solid #dcebe4;margin-top:6px;padding-top:12px}.void{margin:18px 0;padding:12px;background:#fff0f0;color:#a33;border-radius:8px;font-weight:bold}.no-print{padding:11px 18px;background:#138a71;color:#fff;border:0;border-radius:9px;cursor:pointer;margin:20px 0;font-weight:bold}@media print{body{padding:0;background:#fff}.sheet{border:0;border-radius:0}.no-print{display:none}.brand{print-color-adjust:exact;-webkit-print-color-adjust:exact}th,.customer,.summary{print-color-adjust:exact;-webkit-print-color-adjust:exact}}'+
+ '</style></head><body><article class="sheet"><header class="brand"><div><h1>علی‌فاکتور</h1><p>پخش مواد اولیه قنادی علی · همدان</p><p>فاکتور فروش</p></div><div class="meta">شماره: <bdi><b>'+esc(sale.invoiceNo)+'</b></bdi><br/>تاریخ: '+dayFa(sale.createdAt)+'<br/>صادرکننده: علی</div></header><main class="content">'+voidBanner+'<p class="seller">صادرکننده: <strong>علی</strong> · پخش مواد اولیه قنادی · همدان</p><div class="customer">مشتری: <strong>'+esc(sale.customerName)+'</strong></div><table><thead><tr><th>ردیف</th><th>شرح کالا</th><th>مقدار</th><th>قیمت واحد</th><th>جمع</th></tr></thead><tbody>'+rowHtml+'</tbody></table><section class="summary"><div><span>جمع فاکتور</span><strong>'+money(sale.total)+'</strong></div><div><span>دریافت ثبت‌شده برای این فاکتور</span><strong>'+money(paid)+'</strong></div><div class="grand"><span>مانده این فاکتور</span><strong>'+money(remaining)+'</strong></div></section><div style="text-align:center;margin-top:24px;color:#54716b">با سپاس از خرید شما ❤️<br/><strong>علی</strong><br/><small>علی‌فاکتور · تهیه‌شده با سامانه انبار من</small></div><button class="no-print" onclick="window.print()">چاپ / ذخیره PDF</button></main></article></body></html>';
  win.document.open();win.document.write(html);win.document.close();
 }
 
@@ -305,6 +311,21 @@ async function makeDemo(){if(data.products.length||data.customers.length||data.s
 app.addEventListener('click',async(event)=>{
  const close=event.target.closest('[data-close-editor]');if(close||event.target.classList.contains('modal-backdrop')){closeEditor();return;}
  const nav=event.target.closest('[data-nav]');if(nav){setPage(nav.dataset.nav);return;}
+ const shareButton=event.target.closest('[data-share-invoice]');if(shareButton){
+  const sale=data.sales.find(x=>x.id===shareButton.dataset.shareInvoice);
+  if(!sale)return notify('فاکتور یافت نشد.','error');
+  if(sale.status==='void')return notify('فاکتور باطل‌شده قابل ارسال نیست.','error');
+  shareButton.disabled=true;
+  try{
+   const result=await shareInvoiceFile(sale,data.payments);
+   if(result==='shared')notify('تصویر علی‌فاکتور آماده ارسال است؛ پیام‌رسان مقصد را انتخاب کنید.');
+   else if(result==='downloaded-and-text-shared')notify('تصویر فاکتور در دانلودها ذخیره شد؛ پیام‌رسان را انتخاب و تصویر را پیوست کنید.');
+   else if(result==='downloaded-and-copied')notify('تصویر فاکتور دانلود و متن آن کپی شد؛ آن را در پیام‌رسان پیوست کنید.');
+   else if(result==='downloaded')notify('تصویر فاکتور در پوشه دانلودها ذخیره شد.');
+  }catch(error){if(error?.name!=='AbortError')notify(error.message||'اشتراک‌گذاری فاکتور انجام نشد.','error');}
+  finally{if(shareButton.isConnected)shareButton.disabled=false;}
+  return;
+ }
  const invoice=event.target.closest('[data-invoice]');if(invoice){invoicePopup(invoice.dataset.invoice);return;}
  const editMaster=event.target.closest('[data-edit-type]');if(editMaster){openEditor(editMaster.dataset.editType,editMaster.dataset.recordId);return;}
  const toggle=event.target.closest('[data-toggle-type]');if(toggle){
