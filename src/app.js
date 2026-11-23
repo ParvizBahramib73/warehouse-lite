@@ -192,7 +192,7 @@ function editorModal(){
    <div class="field"><label>دسته‌بندی</label><input name="category" maxlength="60" value="${esc(row.category||'')}"></div>
    ${hasHistory?`<div class="field wide"><div class="inline-note warning">به دلیل وجود سابقه خرید، فروش یا موجودی، واحد پایه و اندازه بسته قفل شده‌اند تا سوابق و موجودی تغییر نکند.</div></div>`:`<div class="field"><label>واحد پایه</label><select name="kind"><option value="piece" ${row.kind==='piece'?'selected':''}>عدد</option><option value="gram" ${row.kind==='gram'?'selected':''}>کیلوگرم</option></select></div><div class="field"><label>مقدار هر بسته</label><input name="pack" inputmode="decimal" value="${pack}"></div>`}
    <div class="field"><label>حد هشدار موجودی (${row.kind==='gram'?'کیلوگرم':'عدد'})</label><input name="low" required inputmode="decimal" value="${low}"></div>
-   <div class="field"><label>قیمت فروش پیشنهادی (تومان)</label><input name="salePrice" required inputmode="numeric" value="${row.salePrice}"></div>
+   <div class="field"><label>قیمت فروش پیشنهادی (تومان)</label><input name="salePrice" data-money-input dir="ltr" required inputmode="numeric" value="${row.salePrice}"></div>
    <div class="form-footer"><button class="btn primary full" type="submit">ذخیره تغییرات</button></div>
   </form></section></div>`;
  }
@@ -230,7 +230,7 @@ function editorModal(){
  if(editor.type==='payment'){
   const customer=data.customers.find(x=>x.id===row.customerId);
   return `<div class="modal-backdrop" data-editor-backdrop><section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="editor-title"><header class="modal-head"><div><h2 id="editor-title">ویرایش دریافت وجه</h2><p class="muted small">مشتری: ${esc(customer?.name||'—')}</p></div>${close}</header>
-  <form data-form="edit-payment" class="form-grid"><input type="hidden" name="id" value="${esc(row.id)}"><div class="field"><label>مبلغ (تومان) *</label><input name="amount" required inputmode="numeric" value="${row.amount}"></div><div class="field"><label>روش دریافت</label><select name="method"><option value="cash" ${row.method==='cash'?'selected':''}>نقدی</option><option value="transfer" ${row.method==='transfer'?'selected':''}>انتقال بانکی</option></select></div><div class="field wide"><label>شرح</label><input name="note" maxlength="250" value="${esc(row.note||'')}"></div><div class="inline-note warning wide">این تغییر مانده حساب مشتری را به‌روزرسانی می‌کند. اگر دریافت به فاکتور مشخصی وصل باشد، مبلغ نباید از مبلغ آن فاکتور بیشتر شود.</div><div class="form-footer"><button class="btn primary full" type="submit">ذخیره دریافت</button></div></form></section></div>`;
+  <form data-form="edit-payment" class="form-grid"><input type="hidden" name="id" value="${esc(row.id)}"><div class="field"><label>مبلغ (تومان) *</label><input name="amount" data-money-input dir="ltr" required inputmode="numeric" value="${row.amount}"></div><div class="field"><label>روش دریافت</label><select name="method"><option value="cash" ${row.method==='cash'?'selected':''}>نقدی</option><option value="transfer" ${row.method==='transfer'?'selected':''}>انتقال بانکی</option></select></div><div class="field wide"><label>شرح</label><input name="note" maxlength="250" value="${esc(row.note||'')}"></div><div class="inline-note warning wide">این تغییر مانده حساب مشتری را به‌روزرسانی می‌کند. اگر دریافت به فاکتور مشخصی وصل باشد، مبلغ نباید از مبلغ آن فاکتور بیشتر شود.</div><div class="form-footer"><button class="btn primary full" type="submit">ذخیره دریافت</button></div></form></section></div>`;
  }
  return '';
 }
@@ -394,6 +394,9 @@ app.addEventListener('input',event=>{
  const saleForm=event.target.closest('[data-sale-lines-form]');
  if(saleForm)updateSaleTotal(saleForm);
 });
+app.addEventListener('change',event=>{if(event.target.matches('[data-money-input]'))formatMoneyField(event.target);});
+app.addEventListener('focusout',event=>{if(event.target.matches('[data-money-input]'))formatMoneyField(event.target);});
+app.addEventListener('compositionend',event=>{if(event.target.matches('[data-money-input]'))formatMoneyField(event.target);});
 
 app.addEventListener('submit',async(event)=>{
  const form=event.target.closest('[data-form]');if(!form)return;
