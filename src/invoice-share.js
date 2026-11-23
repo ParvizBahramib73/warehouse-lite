@@ -32,7 +32,7 @@ function roundedRect(ctx,x,y,w,h,r){
 function drawText(ctx,text,x,y,size,color,bold,align,maxWidth){
  ctx.save();ctx.direction=align==='left'?'ltr':'rtl';ctx.textAlign=align||'right';ctx.textBaseline='middle';
  ctx.font=(bold?'700 ':'400 ')+size+'px "Noto Naskh Arabic", Tahoma, Arial, sans-serif';
- ctx.fillStyle=color;ctx.fillText(String(text??''),x,y,maxWidth||undefined);ctx.restore();
+ ctx.fillStyle=color;if(maxWidth)ctx.fillText(String(text??''),x,y,maxWidth);else ctx.fillText(String(text??''),x,y);ctx.restore();
 }
 export async function createInvoiceImageFile(sale,payments=[]){
  if(typeof document==='undefined')throw new Error('ساخت تصویر فاکتور در این محیط پشتیبانی نمی‌شود.');
@@ -106,7 +106,9 @@ function downloadFile(file){
 export async function shareInvoiceFile(sale,payments=[]){
  const file=await createInvoiceImageFile(sale,payments);
  const text=buildInvoiceShareText(sale,payments);
- if(typeof navigator!=='undefined'&&typeof navigator.share==='function'&&typeof navigator.canShare==='function'&&navigator.canShare({files:[file]})){
+ let canShareFile=false;
+ try{canShareFile=typeof navigator!=='undefined'&&typeof navigator.share==='function'&&typeof navigator.canShare==='function'&&navigator.canShare({files:[file]});}catch{}
+ if(canShareFile){
   await navigator.share({files:[file],title:'علی‌فاکتور '+sale.invoiceNo,text});
   return 'shared';
  }
