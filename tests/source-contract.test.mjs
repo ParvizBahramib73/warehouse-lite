@@ -155,7 +155,7 @@ test('large lists use bounded page rendering, search and IndexedDB indexes',()=>
  const data=read('src/data.js');
  const css=read('app.css');
  assert.ok(app.includes('const PAGE_SIZE=25'));
- for(const key of ['products','purchases','sales','customers'])assert.ok(app.includes("pager('"+key+"'"));
+ for(const key of ['products','purchases','suppliers','sales','customers'])assert.ok(app.includes("pager('"+key+"'"));
  assert.ok(app.includes('data-visit-page'));
  assert.ok(app.includes('data-profit-page'));
  assert.ok(data.includes("'byCustomerDate'"));
