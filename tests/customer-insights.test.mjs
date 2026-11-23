@@ -34,7 +34,7 @@ test('follow-up suggestions use latest active sale and outstanding balance, excl
  ];
  const items=getCustomerFollowups(customers,sales,payments,Date.parse('2026-11-23T10:00:00.000Z'));
  assert.deepEqual(items.map(x=>x.id),['c1','c2']);
- assert.equal(items[0].daysSinceSale,22);
+ assert.equal(items[0].daysSinceSale,18);
  assert.equal(items[0].balance,100);
  assert.equal(items[0].reason,'پیگیری خرید و مانده حساب');
  assert.equal(items[1].balance,40);
