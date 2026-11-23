@@ -2,7 +2,7 @@
 
 Offline-first Persian PWA prototype for a small confectionery-supplies distributor in Hamadan, Iran.
 
-> **Prototype 0.1 — not approved for real accounting yet.** Use synthetic data only until Android device, backup/restore, financial edge-case, and security tests are completed.
+> **Prototype 0.1.1 — not approved for real accounting yet.** Use synthetic data only until Android device, backup/restore, financial edge-case, and security tests are completed.
 
 ## Quick links
 
