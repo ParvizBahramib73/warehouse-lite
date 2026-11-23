@@ -282,11 +282,11 @@ export async function voidPayment(db,id) {
 
 export async function saveVisit(db,{customerId,plannedDate,outcome,note,nextFollowUpDate}) {
   const allowed=['planned','purchased','no_purchase','unavailable','follow_up'];
-  if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(String(plannedDate||'')))throw new Error('تاریخ مراجعه معتبر نیست.');
+  if(!/^\d{4}-\\d{2}-\\d{2}$/.test(String(plannedDate||'')))throw new Error('تاریخ مراجعه معتبر نیست.');
   if(!allowed.includes(outcome))throw new Error('نتیجه مراجعه معتبر نیست.');
   const detail=String(note||'').trim().slice(0,500);
   const nextDate=String(nextFollowUpDate||'');
-  if(outcome==='follow_up'&&!/^\\d{4}-\\d{2}-\\d{2}$/.test(nextDate))throw new Error('برای پیگیری مجدد، تاریخ بعدی را انتخاب کنید.');
+  if(outcome==='follow_up'&&!/^\d{4}-\\d{2}-\\d{2}$/.test(nextDate))throw new Error('برای پیگیری مجدد، تاریخ بعدی را انتخاب کنید.');
   if(nextDate&&nextDate<plannedDate)throw new Error('تاریخ پیگیری نمی‌تواند قبل از تاریخ مراجعه باشد.');
   const tx=db.transaction(['customers','visits'],'readwrite');const done=completed(tx);
   try{
