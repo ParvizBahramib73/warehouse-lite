@@ -65,7 +65,7 @@ test('route planner groups scheduled customers by Persian weekday and includes d
  assert.equal(rows.find(x=>x.id==='c2').isFollowUp,true);
  assert.equal(rows.find(x=>x.id==='c1').outcome,'planned');
  const groups=groupRoutePlan(rows);
- assert.deepEqual(groups.map(x=>x.district),['بوعلی','مهدیه']);
+ assert.deepEqual(groups.map(x=>x.routeName),['بوعلی','مهدیه']);
 });
 
 test('daily route includes manually added customers, groups named routes and counts partial purchases',()=>{
