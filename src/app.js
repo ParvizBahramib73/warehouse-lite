@@ -11,7 +11,7 @@ const app=document.getElementById('app');
 let db, data, page='dashboard', toastTimer, importCandidate=null, importWrapper=null, saleRows=[{productId:'',unit:'',quantity:'1',unitPrice:''}];
 let currentTab='list', editor=null, statementCustomerId=null;
 const PAGE_SIZE=25;
-const listState={products:{query:'',status:'all',page:1},purchases:{query:'',page:1},sales:{query:'',status:'all',page:1},customers:{query:'',page:1}};
+const listState={products:{query:'',status:'all',page:1},purchases:{query:'',page:1},suppliers:{query:'',page:1},sales:{query:'',status:'all',page:1},customers:{query:'',page:1}};
 const todayKey=todayTehran(new Date().toISOString());
 const visitState={date:todayKey,query:'',district:'all',status:'all',page:1};
 const profitState={from:todayKey.slice(0,8)+'01',to:todayKey,query:'',page:1};
@@ -103,7 +103,7 @@ function dashboard(){
   </section><div class="grid stats">
     ${stat('فروش امروز',money(total),'↗','green')}${stat('مانده مشتریان',money(balance),'◉','peach')}${stat('تنوع کالا',data.products.length+' قلم','▦','blue')}${stat('کم‌موجود',low.length+' کالا','!','peach')}
   </div>
-  <div class="quick-actions"><button class="quick" data-nav="sales"><span>🧾</span> ثبت فروش جدید</button><button class="quick" data-nav="purchases"><span>📦</span> ورود کالا</button><button class="quick" data-nav="customers"><span>👤</span> مدیریت مشتری</button></div>
+  <div class="quick-actions"><button class="quick" data-nav="sales"><span>🧾</span> ثبت فروش جدید</button><button class="quick" data-nav="purchases"><span>📦</span> ورود کالا</button><button class="quick" data-nav="customers"><span>👤</span> مدیریت مشتری</button><button class="quick" data-nav="visits"><span>🧭</span> برنامه ویزیت</button><button class="quick" data-nav="profit"><span>٪</span> گزارش سود</button></div>
   <div class="grid two"><section class="card"><div class="card-header"><h2>آخرین فاکتورهای فروش</h2><button class="btn sm outline" data-nav="sales">مشاهده همه</button></div>
   ${latest.length?`<div class="table-wrap"><table class="data-table"><thead><tr><th>مشتری</th><th>مبلغ</th><th>زمان</th><th>فاکتور</th></tr></thead><tbody>${latest.map(s=>`<tr><td class="name-cell"><strong>${esc(s.customerName)}</strong><small>${esc(s.invoiceNo)}</small></td><td>${money(s.total)}</td><td>${dateFa(s.createdAt)}</td><td><div class="record-actions"><button class="btn outline sm" data-invoice="${esc(s.id)}">چاپ / PDF</button><button class="btn sm primary" data-share-invoice="${esc(s.id)}">ارسال فاکتور</button></div></td></tr>`).join('')}</tbody></table></div>`:empty('🧾','هنوز فاکتوری صادر نشده است.','برای شروع، کالا و مشتری تعریف کنید.')}</section>
   <section class="card"><div class="card-header"><h2>کالاهای نیازمند تأمین</h2><span class="tag ${low.length?'low':'good'}">${low.length} مورد</span></div>
@@ -154,6 +154,9 @@ function productsPage(){
 
 function purchasesPage(){
  const activeProducts=data.products.filter(isActive),activeSuppliers=data.suppliers.filter(isActive);
+ const supState=listState.suppliers,supQuery=supState.query.trim().toLocaleLowerCase('fa');
+ const supFiltered=[...data.suppliers].sort((a,b)=>a.name.localeCompare(b.name,'fa')).filter(s=>!supQuery||[s.name,s.phone].filter(Boolean).join(' ').toLocaleLowerCase('fa').includes(supQuery));
+ const supView=listPage(supFiltered,supState);
  const state=listState.purchases,q=state.query.trim().toLocaleLowerCase('fa');
  const filtered=[...data.purchases].sort((a,b)=>b.createdAt.localeCompare(a.createdAt)).filter(p=>!q||[p.productName,p.supplierName,p.paymentKind].filter(Boolean).join(' ').toLocaleLowerCase('fa').includes(q));
  const view=listPage(filtered,state);
@@ -170,8 +173,9 @@ function purchasesPage(){
  <div class="inline-note warning">ویرایش خرید، موجودی را با سند اصلاحی تنظیم می‌کند. ابطال فقط وقتی مجاز است که موجودی فعلی برای برگشت مقدار خرید کافی باشد.</div></section>
  <section class="grid">
  <div class="card"><div class="card-header"><h2>افزودن تأمین‌کننده</h2></div><form data-form="supplier" class="form-grid"><div class="field wide"><label>نام *</label><input name="name" required maxlength="100" placeholder="شرکت یا فروشنده"/></div><div class="field wide"><label>شماره تماس</label><input name="phone" inputmode="tel" maxlength="25" placeholder="اختیاری"/></div><div class="form-footer"><button class="btn outline full" type="submit">+ ثبت تأمین‌کننده</button></div></form></div>
- <div class="card"><div class="card-header"><h2>تأمین‌کنندگان</h2><span class="tag">${data.suppliers.length}</span></div>
- ${data.suppliers.length?`<div class="list">${[...data.suppliers].sort((a,b)=>a.name.localeCompare(b.name,'fa')).slice(0,25).map(s=>`<div class="list-row"><div class="item-avatar">🚚</div><div class="grow"><strong>${esc(s.name)}</strong><small>${esc(s.phone||'بدون شماره')}</small>${!isActive(s)?'<span class="tag red">غیرفعال</span>':''}</div>${masterActions('supplier',s,canDeleteMaster('supplier',s))}</div>`).join('')}</div>${data.suppliers.length>25?'<p class="small muted">۲۵ تأمین‌کننده اول نمایش داده شده‌اند؛ جستجوی مستقل تأمین‌کنندگان در گام بعدی قابل افزودن است.</p>':''}`:empty('🚚','تأمین‌کننده‌ای ثبت نشده','از فرم بالا اضافه کنید.')}</div>
+ <div class="card"><div class="card-header"><div><h2>تأمین‌کنندگان</h2><p class="small muted">جستجو در نام و شماره تماس</p></div><span class="tag">${data.suppliers.length}</span></div>
+ ${listSearch('suppliers','نام یا شماره تماس تأمین‌کننده…')}
+ ${supView.total?`<div class="list">${supView.rows.map(s=>`<div class="list-row"><div class="item-avatar">🚚</div><div class="grow"><strong>${esc(s.name)}</strong><small>${esc(s.phone||'بدون شماره')}</small>${!isActive(s)?'<span class="tag red">غیرفعال</span>':''}</div>${masterActions('supplier',s,canDeleteMaster('supplier',s))}</div>`).join('')}</div>${pager('suppliers',supView)}`:empty('🚚','تأمین‌کننده‌ای پیدا نشد','عبارت جستجو را تغییر دهید.')}</div>
  <div class="card"><div class="card-header"><div><h2>سوابق خرید</h2><p class="small muted">جستجو در تمام اسناد خرید</p></div><span class="tag">${data.purchases.length} سند</span></div>
  ${listSearch('purchases','نام کالا یا تأمین‌کننده…')}
  ${view.total?`<div class="list">${view.rows.map(p=>`<div class="list-row"><div class="item-avatar">📥</div><div class="grow"><strong>${esc(p.productName)}</strong><small>${esc(p.supplierName)} · ${dateFa(p.createdAt)}</small><span class="tag ${p.status==='void'?'red':'good'}">${p.status==='void'?'باطل شده':money(p.total)}</span></div>${p.status==='void'?'':`<div class="record-actions"><button class="btn sm outline" data-edit-purchase="${esc(p.id)}">ویرایش</button><button class="btn sm danger" data-void-purchase="${esc(p.id)}">ابطال</button></div>`}</div>`).join('')}</div>${pager('purchases',view)}`:empty('🔎','سندی پیدا نشد','عبارت جستجو را تغییر دهید.')}</div>
