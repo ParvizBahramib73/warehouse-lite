@@ -26,17 +26,17 @@ Date: 2026-11-23
 - Branded AliFactor invoice layout identifies Ali and Hamadan as issuer/business location.
 - Invoice PNG generation and native Android Web Share file-sharing path added; text-share/download fallback retained.
 - Invoice print view now includes seller identity, linked receipts and invoice balance.
-- PWA shell cache bumped to v11.
+- PWA shell cache bumped to v12.
 
 ## Executed checks
 
-- GitHub Actions Quality Checks: PASS — 37 tests, 0 failures.
+- GitHub Actions Quality Checks: PASS — 45 tests, 0 failures.
 - JavaScript syntax checks: PASS for domain, data, backup, app, utils, service worker and build script.
 - Static PWA build: PASS.
 - GitHub Pages deployment: PASS.
-- Latest code commit under test: `d308d224aacb4329e0cf2dcd7253c989481d8fc6`.
-- Latest successful CI run: https://github.com/ParvizBahramib73/warehouse-lite/actions/runs/45181922646
-- Latest successful Pages deployment: https://github.com/ParvizBahramib73/warehouse-lite/actions/runs/45181922586
+- Latest code commit under test: `b72dc6ddfb514e1b29c7dea50cf6436fd16b2e04`.
+- Latest successful CI run: https://github.com/ParvizBahramib73/warehouse-lite/actions/runs/45186740407
+- Latest successful Pages deployment: https://github.com/ParvizBahramib73/warehouse-lite/actions/runs/45186740457
 
 ## Not executed or not established
 
@@ -66,13 +66,12 @@ Date: 2026-11-23
 
 ## Remaining high-priority work
 
-1. Run the full manual pilot checklist on Android.
-2. Test backup/restore after editing and voiding records; reconcile product stock and customer balances.
-3. Implement proper return documents, cheque workflow and account allocation.
-6. Add browser-level end-to-end tests for editing, route visits and reversal dialogs.
-7. Keep using synthetic data until the release gate is explicitly accepted.
-6. Validate customer statement totals and follow-up relevance with Ali's real business workflow using synthetic/test records first.
-
+1. Run the Android pilot with Ali using synthetic/test records: route day setup, visit outcomes, follow-up dates and profit report reconciliation.
+2. Test encrypted backup/restore after adding visit records and confirm legacy v1 backups still restore correctly on a test profile.
+3. Implement proper return documents, cheque workflow and payment-to-invoice allocation.
+4. Add browser-level end-to-end tests for IndexedDB migration, visit save/edit, route filters and financial edge cases.
+5. For very large datasets, replace startup `getAll()` collections with cursor/index-backed paging; consider an API/server only when multi-device use is required.
+6. Keep using synthetic data until Android, backup/restore and business-user acceptance gates are explicitly passed.
 
 ## Invoice sharing verification
 
