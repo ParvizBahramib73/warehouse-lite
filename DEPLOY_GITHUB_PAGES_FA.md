@@ -10,11 +10,10 @@
 
 ## راه‌اندازی یک‌باره
 
-1. یک مخزن خالی با مشخصات بالا بسازید. گزینه افزودن README، `.gitignore` یا License را هنگام ساخت فعال نکنید تا اولین commit بدون تعارض باشد.
-2. محتویات سورس پروژه را در ریشه مخزن قرار دهید؛ خود ZIP را به‌جای فایل‌های پروژه commit نکنید.
-3. در Settings → Pages → Build and deployment، Source را روی **GitHub Actions** قرار دهید.
-4. شاخه پیش‌فرض این مخزن `master` است؛ Workflowها نیز روی `master` اجرا می‌شوند. workflow کیفیت تست‌ها را اجرا می‌کند و workflow انتشار، خروجی `dist/` را به GitHub Pages می‌فرستد.
-5. در Actions منتظر موفقیت `Deploy Warehouse Lite to GitHub Pages` بمانید و سپس URL خروجی را باز کنید.
+1. سورس پروژه در ریشه مخزن `ParvizBahramib73/warehouse-lite` ثبت شده است؛ ZIP را به‌جای فایل‌های پروژه commit نکنید.
+2. در Settings → Pages → Build and deployment، Source را روی **GitHub Actions** قرار دهید.
+3. شاخه پیش‌فرض این مخزن `master` است؛ هر دو Workflow روی `master` تنظیم شده‌اند. Workflow کیفیت تست‌ها را اجرا می‌کند و Workflow انتشار، خروجی `dist/` را به GitHub Pages می‌فرستد.
+4. در Actions منتظر موفقیت `Deploy Warehouse Lite to GitHub Pages` بمانید و سپس URL خروجی را باز کنید.
 
 ## بررسی پس از انتشار
 

@@ -72,7 +72,7 @@ node --check src/app.js
 
 ## انتشار عمومی آزمایشی با GitHub Pages
 
-پس از ایجاد یک مخزن GitHub جداگانه با نام `warehouse-lite` و شاخه پیش‌فرض `main`:
+در مخزن `ParvizBahramib73/warehouse-lite` با شاخه پیش‌فرض `master`:
 
 1. در Settings → Pages، گزینه Source را روی **GitHub Actions** قرار دهید.
 2. فایل‌ها و پوشه‌های همین پروژه را در ریشه مخزن قرار دهید.

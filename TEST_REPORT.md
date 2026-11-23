@@ -9,8 +9,10 @@ Date: 2026-11-23
 ## Executed checks
 
 - `node --check` for each script: PASS
-- `npm test`: **10 PASS / 0 FAIL** (domain precision, pack conversions, money, oversell guard, customer balance, encrypted backup roundtrip, wrong password/tampering, stock-snapshot invariants, manifest assets and service worker precache paths, no remote CDN dependency)
-- `curl -I http://127.0.0.1:8765/`: HTTP 200 in local server (not a browser/PWA test)
+- `npm test`: **12 PASS / 0 FAIL** (domain precision, pack conversions, money, oversell guard, customer balance, encrypted backup roundtrip, wrong password/tampering, stock-snapshot invariants, manifest assets and service worker precache paths, no remote CDN dependency)
+- `npm run build`: PASS; generated `dist/` static PWA output.
+- GitHub Pages project-site paths use relative assets and were covered by unit tests.
+- GitHub repository publication commit: `fd87d5ccbbe405be8e07d3c868c9256aba8b420f` (Actions/Pages deployment still pending).
 
 ## Not executed or not established
 
