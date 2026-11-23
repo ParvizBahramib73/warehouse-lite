@@ -346,3 +346,35 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
  .route-filters,.profit-filters{gap:7px}
  .route-stats .stat-value,.profit-stats .stat-value{font-size:.84rem}
 }
+
+/* Daily field-visit workflow */
+.route-add-card{padding:19px 21px}
+.route-add-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:13px}
+.route-add-heading h3{margin:0;font-size:.95rem}
+.route-add-heading p{margin:4px 0 0}
+.route-add-form{display:grid;grid-template-columns:minmax(180px,1.2fr) minmax(180px,1fr) minmax(170px,1fr) auto;align-items:end;gap:11px}
+.route-add-form .field{min-width:0}
+.route-add-form .field input,.route-add-form .field select{min-height:44px}
+.route-add-form>.btn{min-height:44px;white-space:nowrap}
+.route-stop-number{display:grid;place-items:center;flex:0 0 30px;width:30px;height:30px;border-radius:10px;background:#eaf5f0;color:#147963;font-weight:850;font-size:.78rem;font-variant-numeric:tabular-nums}
+.route-customer-top .tag{display:inline-flex;margin-top:5px;max-width:100%;white-space:normal;line-height:1.55}
+.route-card-actions{display:flex;align-items:center;justify-content:flex-start;gap:8px;flex-wrap:wrap;margin-top:10px;padding-top:10px;border-top:1px solid #edf2ef}
+.route-card-actions .btn{min-height:36px}
+.route-stats{grid-template-columns:repeat(4,minmax(0,1fr))}
+.route-add-form .hint{display:block;margin-top:5px}
+@media(max-width:1180px){
+ .route-add-form{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .route-add-form>.btn{width:100%}
+}
+@media(max-width:760px){
+ .route-add-card{padding:15px 13px}
+ .route-add-heading{align-items:center}
+ .route-add-form{grid-template-columns:minmax(0,1fr);gap:9px}
+ .route-add-form .field,.route-add-form>.btn{grid-column:1}
+ .route-add-form .field input,.route-add-form .field select{min-height:44px;font-size:16px}
+ .route-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .route-customer-top{gap:7px}
+ .route-stop-number{width:27px;height:27px;flex-basis:27px}
+ .route-card-actions{display:grid;grid-template-columns:minmax(0,1fr)}
+ .route-card-actions .btn{width:100%;min-height:42px}
+}
