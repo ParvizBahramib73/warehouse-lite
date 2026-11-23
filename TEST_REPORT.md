@@ -1,4 +1,4 @@
-# Warehouse Lite v0.1.6 — test evidence
+# Warehouse Lite v0.1.7 — test evidence
 
 Date: 2026-11-23
 
@@ -10,6 +10,12 @@ Date: 2026-11-23
 - Sales invoice voiding restores stock and is blocked when customer receipts on/after the invoice date make allocation uncertain.
 - Receipt editing validates linked invoice totals; receipt voiding preserves the record and removes it from customer balance calculations.
 - Customer balances and daily sales exclude voided documents.
+- IndexedDB schema upgraded from v1 to v2 with a dedicated visits store and indexes for common date/customer/product lookups; existing stores are preserved.
+- Encrypted backup schema v2 includes visit history and remains backward-compatible with v1 backup files.
+- Route planner groups scheduled customers by Persian weekday and district, includes due follow-ups, and stores outcomes (purchased, no purchase, unavailable, follow-up) plus notes and next follow-up date.
+- Profit report computes estimated gross profit from weighted-average purchase cost; new sale lines keep cost snapshots, legacy invoices are estimated only where prior purchase records allow, and unknown-cost invoices are excluded from the covered-profit total.
+- Product, purchase, supplier, sales and customer lists use search and 25-row pagination; route and profit reports are also paginated.
+- IndexedDB collections are still loaded into memory on startup; this release bounds rendered rows but is not yet cursor-paginated at the storage layer.
 - Dashboard greets Ali and includes a creator credit linking to Parviz Bahrami's personal website.
 - Customer directory now supports live search by name, phone number and district.
 - Customer account statement shows invoices and receipts chronologically, debit/credit totals, running balance and voided records without counting voids.
@@ -63,8 +69,8 @@ Date: 2026-11-23
 1. Run the full manual pilot checklist on Android.
 2. Test backup/restore after editing and voiding records; reconcile product stock and customer balances.
 3. Implement proper return documents, cheque workflow and account allocation.
-4. Add browser-level end-to-end tests for editing and reversal dialogs.
-5. Keep using synthetic data until the release gate is explicitly accepted.
+6. Add browser-level end-to-end tests for editing, route visits and reversal dialogs.
+7. Keep using synthetic data until the release gate is explicitly accepted.
 6. Validate customer statement totals and follow-up relevance with Ali's real business workflow using synthetic/test records first.
 
 
