@@ -52,7 +52,7 @@ export function buildRoutePlan(customers=[],visits=[],date=''){
    routeOrder:visit?.routeOrder??followUp?.routeOrder??null,
    visitedAt:visit?.visitedAt||null,
    nextFollowUpDate:visit?.nextFollowUpDate||'',
-   isFollowUp:!visit&&Boolean(followUp),
+   isFollowUp:Boolean(followUp),
    followUpNote:followUp?.note||''
   });
  }
@@ -78,7 +78,7 @@ export function summarizeRoute(rows=[]){
   const outcome=VISIT_OUTCOMES[row.outcome]?row.outcome:'planned';
   summary[outcome]=(summary[outcome]||0)+1;
   if(VISITED_OUTCOMES.includes(outcome))summary.visited++;
-  if(FOLLOW_UP_OUTCOMES.includes(outcome))summary.needsFollowUp++;
+  if(FOLLOW_UP_OUTCOMES.includes(outcome)||row.isFollowUp)summary.needsFollowUp++;
  }
  return summary;
 }
