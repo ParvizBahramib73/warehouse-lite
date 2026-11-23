@@ -35,11 +35,17 @@ function render(){
     <aside class="sidebar">
       <div class="logo"><div class="logo-mark" aria-hidden="true">◈</div><div><strong>انبار من</strong><span>Warehouse Lite</span></div></div>
       <nav class="nav-list" aria-label="بخش‌های برنامه">${tabs.map(([id,label,icon])=>`<button type="button" data-nav="${id}" class="nav ${id===page?'active':''}" ${id===page?'aria-current="page"':''}><span class="nav-icon" aria-hidden="true">${icon}</span>${label}</button>`).join('')}</nav>
-      <div class="side-footer"><strong>نسخه آزمایشی ۰.۱.۱</strong><br/>اطلاعات فقط روی همین دستگاه ذخیره می‌شوند. هر روز پشتیبان تهیه کنید.</div>
+      <div class="side-footer"><strong>نسخه آزمایشی ۰.۱.۲</strong><br/>اطلاعات فقط روی همین دستگاه ذخیره می‌شوند. هر روز پشتیبان تهیه کنید.</div>
     </aside>
     <main class="main">
       <header class="topbar"><div><h1>${titleMap[page]}</h1><div class="top-sub">${subtitleMap[page]}</div></div><div class="top-right"><span class="pill ${online?'ok':'offline'}" id="net-status">${online?'● آماده کار آفلاین':'● بدون اینترنت'}</span><span class="date">${formatDate()}</span></div></header>
       ${page==='dashboard'?dashboard():page==='products'?productsPage():page==='purchases'?purchasesPage():page==='sales'?salesPage():page==='customers'?customersPage():backupPage()}
+      <footer class="app-footer">
+        <span>ساخته‌شده برای علی</span>
+        <span>طراحی و توسعه:
+          <a href="https://parvizbahramib73.github.io/personal-brand-website" target="_blank" rel="noopener noreferrer" aria-label="وب‌سایت شخصی Parviz Bahrami">Parviz Bahrami <span aria-hidden="true">↗</span></a>
+        </span>
+      </footer>
     </main>
     <nav class="mobile-nav" aria-label="ناوبری موبایل">${[['dashboard','خانه','⌂'],['products','کالا','▦'],['purchases','خرید','↓'],['sales','فروش','↑'],['customers','مشتریان','♙'],['backup','پشتیبان','⚙']].map(([id,l,i])=>`<button type="button" class="mob ${id===page?'active':''}" data-nav="${id}" ${id===page?'aria-current="page"':''}><span aria-hidden="true">${i}</span>${l}</button>`).join('')}</nav>
   </div>${editorModal()}`;
@@ -52,7 +58,17 @@ function dashboard(){
   const balance=data.customers.reduce((a,c)=>a+Math.max(0,customerBalance(c.id,data.sales,data.payments)),0);
   const low=data.products.filter(p=>isActive(p)&&p.stockBase<=p.lowBase);
   const latest=[...data.sales].sort((a,b)=>b.createdAt.localeCompare(a.createdAt)).slice(0,5);
-  return `<div class="grid stats">
+  return `<section class="welcome-card" aria-label="خوش‌آمدگویی">
+    <div class="welcome-content">
+      <span class="welcome-kicker">WAREHOUSE LITE · انبار من</span>
+      <h2>سلام علی جان، خوش اومدی! <span aria-hidden="true">👋</span></h2>
+      <p>از اینجا می‌تونی موجودی انبار، خریدها و فروش‌های روزانه‌ات رو ساده و مرتب مدیریت کنی.</p>
+      <div class="welcome-hint"><span aria-hidden="true">✦</span> همه‌چیز برای یک روز کاری منظم آماده است.</div>
+    </div>
+    <div class="welcome-emblem" aria-hidden="true">
+      <span>◈</span><strong>انبار من</strong><small>مدیریت ساده‌تر، خیال راحت‌تر</small>
+    </div>
+  </section><div class="grid stats">
     ${stat('فروش امروز',money(total),'↗','green')}${stat('مانده مشتریان',money(balance),'◉','peach')}${stat('تنوع کالا',data.products.length+' قلم','▦','blue')}${stat('کم‌موجود',low.length+' کالا','!','peach')}
   </div>
   <div class="quick-actions"><button class="quick" data-nav="sales"><span>🧾</span> ثبت فروش جدید</button><button class="quick" data-nav="purchases"><span>📦</span> ورود کالا</button><button class="quick" data-nav="customers"><span>👤</span> مدیریت مشتری</button></div>

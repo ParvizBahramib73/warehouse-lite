@@ -47,3 +47,13 @@ test('edit dialogs support safe document workflows and keep invoice customer fix
  assert.ok(app.includes('data-form="edit-sale"'));
  assert.ok(app.includes('data-form="edit-payment"'));
 });
+
+test('dashboard welcomes Ali and credits the creator with a safe personal-site link',()=>{
+ const app=read('src/app.js');
+ assert.ok(app.includes('سلام علی جان، خوش اومدی!'));
+ assert.ok(app.includes('ساخته‌شده برای علی'));
+ assert.ok(app.includes('طراحی و توسعه:'));
+ assert.ok(app.includes('https://parvizbahramib73.github.io/personal-brand-website'));
+ assert.ok(app.includes('target="_blank"'));
+ assert.ok(app.includes('rel="noopener noreferrer"'));
+});

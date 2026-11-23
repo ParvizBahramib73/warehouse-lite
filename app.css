@@ -29,3 +29,30 @@
  .modal-backdrop{align-items:flex-end;padding:8px}
  .modal-card,.modal-card.wide-modal{width:100%;max-height:94dvh;border-radius:18px 18px 10px 10px;padding:17px 14px}
 }
+
+/* Personalized dashboard welcome and creator credit */
+.welcome-card{position:relative;isolation:isolate;overflow:hidden;display:flex;align-items:center;justify-content:space-between;gap:24px;margin-bottom:23px;padding:27px 30px;min-height:176px;border-radius:20px;background:linear-gradient(125deg,#173642 0%,#176b61 58%,#148b72 100%);color:#f6fffb;box-shadow:0 14px 32px rgba(19,86,75,.12)}
+.welcome-card::before,.welcome-card::after{content:"";position:absolute;z-index:0;border-radius:50%;pointer-events:none;background:rgba(255,255,255,.055)}
+.welcome-card::before{width:260px;height:260px;inset-inline-end:-70px;top:-135px}
+.welcome-card::after{width:170px;height:170px;inset-inline-end:130px;bottom:-125px;background:rgba(255,255,255,.04)}
+.welcome-content,.welcome-emblem{position:relative;z-index:1}
+.welcome-content{max-width:720px}
+.welcome-kicker{display:inline-block;font-size:.72rem;letter-spacing:.08em;color:#b8e8d8;margin-bottom:12px}
+.welcome-card h2{font-size:clamp(1.25rem,2vw,1.75rem);margin:0 0 10px;color:#fff}
+.welcome-card p{font-size:.9rem;color:#e1f3ee;line-height:1.9;margin:0;max-width:650px}
+.welcome-hint{display:flex;align-items:center;gap:8px;margin-top:14px;color:#c7eee0;font-size:.78rem}
+.welcome-emblem{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:170px;min-height:120px;padding:16px;border:1px solid rgba(255,255,255,.18);border-radius:18px;background:rgba(255,255,255,.07);backdrop-filter:blur(4px)}
+.welcome-emblem span{font-size:2.4rem;line-height:1;color:#c5f1df;margin-bottom:8px}
+.welcome-emblem strong{font-size:.95rem;color:#fff}
+.welcome-emblem small{font-size:.68rem;color:#cce8df;margin-top:5px}
+.app-footer{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:28px;padding:16px 3px 0;border-top:1px solid var(--line);color:var(--muted);font-size:.76rem;line-height:1.8}
+.app-footer a{color:#0b806b;font-weight:750;text-decoration:none;white-space:nowrap}
+.app-footer a:hover{text-decoration:underline}
+@media(max-width:760px){
+ .welcome-card{padding:21px 18px;min-height:auto;gap:12px}
+ .welcome-emblem{min-width:100px;min-height:95px;padding:10px}
+ .welcome-emblem small{display:none}
+ .welcome-card h2{font-size:1.2rem}
+ .welcome-card p{font-size:.82rem}
+ .app-footer{flex-direction:column;align-items:center;text-align:center;padding-bottom:14px}
+}
