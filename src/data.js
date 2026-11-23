@@ -280,22 +280,47 @@ export async function voidPayment(db,id) {
   }catch(error){return abort(tx,done,error);}
 }
 
-export async function saveVisit(db,{customerId,plannedDate,outcome,note,nextFollowUpDate}) {
-  const allowed=['planned','purchased','no_purchase','unavailable','follow_up'];
-  if(!/^\d{4}-\d{2}-\d{2}$/.test(String(plannedDate||'')))throw new Error('تاریخ مراجعه معتبر نیست.');
+export async function saveVisit(db,{customerId,plannedDate,outcome,note,nextFollowUpDate,routeName}) {
+  const allowed=['planned','purchased','small_purchase','no_purchase','unavailable','follow_up','rescheduled','not_needed','declined','other','cancelled'];
+  const validDate=value=>{
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(String(value||'')))return false;
+    const [year,month,day]=value.split('-').map(Number),date=new Date(Date.UTC(year,month-1,day));
+    return date.getUTCFullYear()===year&&date.getUTCMonth()===month-1&&date.getUTCDate()===day;
+  };
+  if(!validDate(plannedDate))throw new Error('تاریخ مراجعه معتبر نیست.');
   if(!allowed.includes(outcome))throw new Error('نتیجه مراجعه معتبر نیست.');
   const detail=String(note||'').trim().slice(0,500);
   const nextDate=String(nextFollowUpDate||'');
-  if(outcome==='follow_up'&&!/^\d{4}-\d{2}-\d{2}$/.test(nextDate))throw new Error('برای پیگیری مجدد، تاریخ بعدی را انتخاب کنید.');
-  if(nextDate&&nextDate<plannedDate)throw new Error('تاریخ پیگیری نمی‌تواند قبل از تاریخ مراجعه باشد.');
+  const needsFollowUp=['follow_up','rescheduled'].includes(outcome);
+  if(needsFollowUp&&(!validDate(nextDate)||nextDate<=plannedDate))throw new Error('برای پیگیری یا مراجعه مجدد، یک تاریخ بعد از امروز انتخاب کنید.');
+  if(outcome==='other'&&!detail)throw new Error('برای وضعیت سایر، توضیح کوتاه وارد کنید.');
   const tx=db.transaction(['customers','visits'],'readwrite');const done=completed(tx);
   try{
     const customer=await request(tx.objectStore('customers').get(customerId));
     if(!customer||!active(customer))throw new Error('مشتری پیدا نشد یا غیرفعال است.');
     const store=tx.objectStore('visits');
-    const existing=await request(store.index('byCustomerDate').get([customerId,plannedDate]));
+    const [existing,dayVisits]=await Promise.all([
+      request(store.index('byCustomerDate').get([customerId,plannedDate])),
+      request(store.index('byDate').getAll(plannedDate))
+    ]);
     const now=isoNow();
-    const row={id:existing?.id||makeId(),customerId,customerName:customer.name,plannedDate,outcome,note:detail,nextFollowUpDate:outcome==='follow_up'?nextDate:'',createdAt:existing?.createdAt||now,modifiedAt:now};
+    const maxOrder=dayVisits.reduce((max,row)=>Math.max(max,Number.isSafeInteger(row.routeOrder)?row.routeOrder:0),0);
+    const normalizedRoute=String(routeName||'').trim().slice(0,80)||String(customer.district||'').trim().slice(0,80)||'مسیر روزانه';
+    const row={
+      ...existing,
+      id:existing?.id||makeId(),
+      customerId,
+      customerName:customer.name,
+      plannedDate,
+      outcome,
+      note:detail,
+      routeName:normalizedRoute,
+      routeOrder:existing?.routeOrder??maxOrder+1,
+      visitedAt:['planned','cancelled'].includes(outcome)?null:(existing?.visitedAt||now),
+      nextFollowUpDate:needsFollowUp?nextDate:'',
+      createdAt:existing?.createdAt||now,
+      modifiedAt:now
+    };
     store.put(row);await done;return row.id;
   }catch(error){return abort(tx,done,error);}
 }
