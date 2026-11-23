@@ -165,3 +165,90 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 }
 @media(min-width:761px) and (max-width:1180px){.topbar{padding:16px 18px}.main{padding:23px 20px 60px}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(prefers-reduced-motion:reduce){.page-content{animation:none}.card,.btn,.quick,.stat,.nav{transition:none}}
+
+/* 0.1.6 — edge-to-edge desktop shell and customer workflow */
+.layout{width:100%;max-width:none;margin:0}
+.sidebar{position:sticky;top:0;right:0;width:auto;height:100vh;min-height:100vh;align-self:start}
+.main{min-width:0}
+.sale-customer-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:10px}
+.sale-new-customer{min-height:49px;margin-bottom:1px}
+.customer-layout{grid-template-columns:minmax(0,1.35fr) minmax(320px,.9fr)}
+.customer-forms{align-content:start}
+.customer-search{display:flex;align-items:center;gap:10px;margin:-2px 0 15px}
+.customer-search input{width:100%;min-width:0;min-height:46px;padding:11px 14px;border:1px solid #dce7e3;border-radius:13px;background:#f9fcfa;color:var(--ink);font:inherit;font-size:.88rem;outline:none}
+.customer-search input:focus{border-color:#27a286;background:#fff;box-shadow:var(--focus)}
+.customer-search .tag{flex:none}
+.customer-row{align-items:flex-start}
+.customer-balance{display:flex;flex-direction:column;align-items:flex-end;gap:4px;min-width:0;text-align:left}
+.customer-balance .number{font-weight:850;white-space:nowrap;font-size:.9rem}
+.customer-balance .debt,.followup-side .debt{color:#b15b35}
+.customer-balance .credit{color:#197d62}
+.customer-actions{display:flex;flex-direction:column;align-items:flex-end;gap:7px;margin-top:7px}
+.customer-actions .record-actions{justify-content:flex-end}
+.customer-phone{display:inline-block;margin-top:5px;color:#0b806b!important;text-decoration:none}
+.customer-phone:hover{text-decoration:underline}
+.search-empty{padding:20px;text-align:center;color:var(--muted);background:#f8fbf9;border:1px dashed #dce8e3;border-radius:14px}
+.search-empty[hidden],[data-customer-row][hidden]{display:none!important}
+.followup-panel{margin-top:20px}
+.followup-panel .card-header p{margin:4px 0 0}
+.followup-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+.followup-row{align-items:center}
+.followup-side{display:flex;flex-direction:column;align-items:flex-end;gap:5px;white-space:nowrap}
+.followup-side small{font-size:.68rem;color:var(--muted)}
+.statement-backdrop{position:fixed;inset:0;z-index:180;display:flex;align-items:center;justify-content:center;padding:22px;background:rgba(13,31,37,.58);backdrop-filter:blur(5px);overflow:auto}
+.statement-modal{width:min(1080px,100%);max-height:92dvh;overflow:auto;padding:25px;border:1px solid #e1ebe6;border-radius:24px;background:#fff;box-shadow:0 30px 90px rgba(8,27,37,.3)}
+.statement-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;padding-bottom:17px;border-bottom:1px solid #edf2ef}
+.statement-head .welcome-kicker{color:#14856c;margin-bottom:7px}
+.statement-head h2{font-size:1.25rem;font-weight:850;margin:0 0 6px}
+.statement-head p{font-size:.78rem;color:var(--muted);margin:0}
+.statement-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:18px 0}
+.statement-stats>div{display:flex;flex-direction:column;gap:7px;padding:15px;border:1px solid #e7efeb;border-radius:15px;background:#f8fbf9;min-width:0}
+.statement-stats small{font-size:.72rem;color:var(--muted)}
+.statement-stats strong{font-size:1rem;font-weight:850;overflow-wrap:anywhere}
+.statement-stats .statement-balance{background:#edf8f2;border-color:#d8eee2}
+.statement-table-wrap{overflow:auto;border:1px solid #e9efec;border-radius:14px}
+.statement-table{min-width:760px}
+.statement-table th,.statement-table td{padding:12px 11px}
+.statement-detail{display:block;max-width:280px;margin-top:4px;color:var(--muted);font-size:.7rem;white-space:normal;line-height:1.7}
+.statement-void{opacity:.58}
+.statement-void td{text-decoration:line-through}
+.statement-void td:last-child{text-decoration:none}
+.statement-foot{display:flex;justify-content:space-between;gap:12px;margin-top:14px;color:var(--muted);font-size:.72rem;line-height:1.8}
+@media(max-width:1180px){
+ .layout{width:100%;max-width:none;margin:0;grid-template-columns:220px minmax(0,1fr)}
+ .customer-layout{grid-template-columns:minmax(0,1fr)}
+ .followup-list{grid-template-columns:minmax(0,1fr)}
+}
+@media(max-width:760px){
+ .layout{width:100%;max-width:none;margin:0}
+ .sidebar{display:none}
+ .sale-customer-row{grid-template-columns:minmax(0,1fr);gap:8px}
+ .sale-new-customer{width:100%;min-height:42px}
+ .customer-layout{grid-template-columns:minmax(0,1fr)}
+ .customer-search{gap:7px}
+ .customer-search .tag{display:none}
+ .customer-row{display:grid;grid-template-columns:38px minmax(0,1fr);align-items:start}
+ .customer-balance{grid-column:1/-1;align-items:stretch;width:100%;padding-top:8px;border-top:1px solid #edf2ef;text-align:right}
+ .customer-actions{align-items:stretch;width:100%}
+ .customer-actions>.record-actions{width:100%;margin:0}
+ .customer-actions>.btn{width:100%}
+ .followup-list{grid-template-columns:minmax(0,1fr)}
+ .followup-row{display:grid;grid-template-columns:38px minmax(0,1fr);align-items:start}
+ .followup-row .item-avatar{grid-column:1;grid-row:1}
+ .followup-row .grow{grid-column:2;grid-row:1}
+ .followup-side{grid-column:1/-1;align-items:stretch;width:100%;padding-top:8px;border-top:1px solid #edf2ef}
+ .followup-side .btn{width:100%}
+ .statement-backdrop{align-items:flex-end;padding:7px}
+ .statement-modal{width:100%;max-height:94dvh;padding:17px 13px;border-radius:20px 20px 10px 10px}
+ .statement-head{position:sticky;top:-17px;z-index:3;background:#fff;padding:7px 0 13px}
+ .statement-head h2{font-size:1.05rem}
+ .statement-stats{gap:7px;margin:13px 0}
+ .statement-stats>div{padding:10px 8px;border-radius:12px}
+ .statement-stats small{font-size:.64rem}
+ .statement-stats strong{font-size:.78rem}
+ .statement-foot{flex-direction:column;gap:3px}
+}
+@media(max-width:390px){
+ .statement-stats{grid-template-columns:1fr}
+ .customer-actions>.record-actions{flex-wrap:wrap}
+}
