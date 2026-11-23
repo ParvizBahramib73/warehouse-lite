@@ -4,7 +4,7 @@ Responsive, offline-first Persian PWA prototype for Ali's confectionery-supplies
 
 Designed and developed by [Parviz Bahrami](https://parvizbahramib73.github.io/personal-brand-website).
 
-> **Prototype 0.1.6 — not approved for real accounting yet.** Use synthetic data only until Android device, backup/restore, financial edge-case, and security tests are completed.
+> **Prototype 0.1.7 — not approved for real accounting yet.** Use synthetic data only until Android device, backup/restore, financial edge-case, and security tests are completed.
 
 ## Quick links
 
@@ -23,8 +23,12 @@ Designed and developed by [Parviz Bahrami](https://parvizbahramib73.github.io/pe
 - Branded AliFactor invoice preview/print and PNG sharing through the Android system share sheet.
 - Live Persian three-digit grouping in Toman input fields with cursor preservation.
 - Customer search, chronological account statements with running balances, and dashboard follow-up suggestions.
+- District/day visit planning with saved outcomes and follow-up dates.
+- Estimated gross-profit reporting using weighted-average purchase cost; new invoices keep cost snapshots, while older invoices are reconstructed where purchase history allows.
+- Search and 25-row pagination for product, purchase, supplier, sales, customer, visit and profit lists; IndexedDB v2 adds visit storage and lookup indexes. Legacy v1 encrypted backups remain importable.
 - Faster invoice entry with preserved draft state and focus progression; full-width desktop shell with right-edge sidebar.
 - GitHub stores source code and runs tests; it is **not** the operational database or backup store.
+- Current pagination limits rendered rows, but the app still loads IndexedDB collections into browser memory at startup. Very large datasets need cursor-based database paging and a server/API phase.
 - Project Pages paths are relative so the app can be hosted at `/warehouse-lite/`.
 
 ## Local development
