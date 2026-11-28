@@ -1,9 +1,10 @@
+import {buildReturnPlan,creditedForSale} from './returns.js';
 import {asInteger,asPositiveInteger,asDecimalMilli,parseBaseQuantity,lineTotal,validateSaleLines,pricePerBaseUnit,valueForQuantity,calcSuggestedPrice,validDate,tehranDate,isoNow,makeId,invoiceOutstanding} from './domain.js';
 // Fresh v0.2 IRR database for the main application; never reuse the legacy toman database.
 // The earlier v0.1.8 and v0.2 preview stores are intentionally untouched.
 export const DB_NAME='warehouse-lite-v02-irr';
-export const DB_VERSION=1;
-export const TABLES=['products','suppliers','customers','purchases','sales','payments','movements','cheques','settings','priceHistory'];
+export const DB_VERSION=2;
+export const TABLES=['products','suppliers','customers','purchases','sales','payments','movements','cheques','settings','priceHistory','returns'];
 export const DEFAULT_SETTINGS=Object.freeze({id:'main',marginBps:1000,expiryWarningDays:30,theme:'auto',businessName:'انبار من',businessPhone:'',invoiceNote:'',invoiceSize:'a5'});
 function req(r){return new Promise((resolve,reject)=>{r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);});}
 function completed(tx){return new Promise((resolve,reject)=>{tx.oncomplete=resolve;tx.onabort=()=>reject(tx.error||new Error('تراکنش لغو شد.'));tx.onerror=()=>{};});}
@@ -98,14 +99,50 @@ export async function addSale(db,input){
     await done;return sale;
   }catch(e){abort(tx);await done.catch(()=>{});throw e;}
 }
+
+/** Register a credit note and (if saleable) restore original purchase-lot stock in one transaction.
+ * Payments are NEVER automatically refunded: any overpayment becomes customer credit.
+ */
+export async function addSaleReturn(db,input){
+  const tx=db.transaction(['returns','sales','products','purchases','movements'],'readwrite');const done=completed(tx);
+  try{
+    const sale=await req(tx.objectStore('sales').get(input.saleId));
+    if(!sale)throw new Error('فاکتور برای مرجوعی پیدا نشد.');
+    const [existing,products,lots]=await Promise.all([
+      req(tx.objectStore('returns').getAll()),req(tx.objectStore('products').getAll()),req(tx.objectStore('purchases').getAll())
+    ]);
+    const plan=buildReturnPlan(sale,existing,products,input.lines,{restock:input.restock,reason:input.reason});
+    const id=makeId(),now=isoNow();
+    const row={id,createdAt:now,creditNo:`RT-${tehranDate(now).replace(/-/g,'')}-${id.slice(0,6).toUpperCase()}`,
+      saleId:sale.id,invoiceNo:sale.invoiceNo,customerId:sale.customerId,customerName:sale.customerName,...plan};
+    if(plan.restock){
+      const stockIncrease=new Map();
+      for(const alloc of plan.allocations){
+        const lot=lots.find(l=>l.id===alloc.purchaseId);if(!lot||lot.productId!==alloc.productId)throw new Error('دوره خرید مرجوعی پیدا نشد.');
+        const updated=lot.remainingBase+alloc.quantityBase;
+        if(!Number.isSafeInteger(updated)||updated>lot.quantityBase)throw new Error('موجودی دوره مرجوعی نامعتبر است.');
+        lot.remainingBase=updated;tx.objectStore('purchases').put({...lot});
+        stockIncrease.set(alloc.productId,(stockIncrease.get(alloc.productId)||0)+alloc.quantityBase);
+      }
+      for(const [productId,quantity] of stockIncrease){
+        const p=products.find(x=>x.id===productId);if(!p)throw new Error('کالای مرجوعی یافت نشد.');
+        const stockBase=p.stockBase+quantity;if(!Number.isSafeInteger(stockBase))throw new Error('موجودی نامعتبر است.');
+        tx.objectStore('products').put({...p,stockBase,updatedAt:now});
+        tx.objectStore('movements').add({id:makeId(),createdAt:now,productId,sourceType:'return',sourceId:id,deltaBase:quantity});
+      }
+    }
+    tx.objectStore('returns').add(row);await done;return row;
+  }catch(error){abort(tx);await done.catch(()=>{});throw error;}
+}
+
 export async function addPayment(db,input){const amount=asPositiveInteger(input.amount,'مبلغ دریافت');
   const method=String(input.method||'cash');if(!['cash','transfer'].includes(method))throw new Error('روش دریافت نامعتبر.');
-  const tx=db.transaction(['customers','sales','payments'],'readwrite');const done=completed(tx);
+  const tx=db.transaction(['customers','sales','payments','returns'],'readwrite');const done=completed(tx);
   try{
     const customer=await req(tx.objectStore('customers').get(input.customerId));if(!customer)throw new Error('مشتری یافت نشد.');
     let saleId=input.saleId||null;
     if(saleId){const s=await req(tx.objectStore('sales').get(saleId));if(!s||s.customerId!==customer.id)throw new Error('فاکتور متعلق به این مشتری نیست.');
-      const all=await req(tx.objectStore('payments').getAll());if(amount>invoiceOutstanding(s,all))throw new Error('مبلغ از مانده تخصیص‌نیافته فاکتور بیشتر است.');}
+      const [all,returns]=await Promise.all([req(tx.objectStore('payments').getAll()),req(tx.objectStore('returns').getAll())]);if(amount>invoiceOutstanding(s,all,returns))throw new Error('مبلغ از مانده تخصیص‌نیافته فاکتور بیشتر است.');}
     tx.objectStore('payments').add({id:makeId(),createdAt:isoNow(),customerId:customer.id,amount,method,saleId,note:String(input.note||'').slice(0,250)});await done;
   }catch(e){abort(tx);await done.catch(()=>{});throw e;}
 }
@@ -145,8 +182,9 @@ export async function addBulkProducts(db,rows,marginBps=1000){const margin=asInt
 function asDecimalForOpening(value){return asDecimalMilli(String(value||'0'),'موجودی افتتاحیه');}
 export async function replaceAll(db,snapshot){
   // Validate again before any destructive transaction, even if the caller already decrypted it.
-  const {validateSnapshot}=await import('./backup.js');validateSnapshot(snapshot);
+  const {validateSnapshot,normalizeSnapshot}=await import('./backup.js');validateSnapshot(snapshot);
+  const normalized=normalizeSnapshot(snapshot);
   const tx=db.transaction(TABLES,'readwrite');const done=completed(tx);try{
-    for(const name of TABLES){const store=tx.objectStore(name);store.clear();for(const row of snapshot[name])store.add(row);}await done;
+    for(const name of TABLES){const store=tx.objectStore(name);store.clear();for(const row of normalized[name])store.add(row);}await done;
   }catch(e){abort(tx);await done.catch(()=>{});throw e;}
 }

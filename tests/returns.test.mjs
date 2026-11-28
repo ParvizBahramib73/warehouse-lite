@@ -1,0 +1,113 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {MemoryDb} from './helpers/memory-db.mjs';
+import {addRecord,addPurchase,addSale,addSaleReturn,addPayment,readAll,replaceAll} from '../src/data.js';
+import {customerBalance,invoiceOutstanding,tehranDate} from '../src/domain.js';
+import {validateSnapshot,normalizeSnapshot,encryptBackup,decryptBackup} from '../src/backup.js';
+import {creditedForSale,returnProfitDelta} from '../src/returns.js';
+
+const later=days=>new Date(Date.parse(tehranDate()+'T00:00:00Z')+days*86400000).toISOString().slice(0,10);
+async function setup(){
+ const db=new MemoryDb();const s=await addRecord(db,'suppliers',{name:'تأمین‌کننده'});
+ const c=await addRecord(db,'customers',{name:'خریدار'});
+ const p=await addRecord(db,'products',{name:'روغن',kind:'gram',unitConfigs:{pack:5000},replacementPrice:1500000,salePrice:1650000});
+ const old=await addPurchase(db,{supplierId:s.id,productId:p.id,unit:'kg',quantity:'3',unitPrice:'1000000',expiryDate:later(-1)});
+ const lot1=await addPurchase(db,{supplierId:s.id,productId:p.id,unit:'kg',quantity:'4',unitPrice:'1000000',expiryDate:later(30)});
+ const lot2=await addPurchase(db,{supplierId:s.id,productId:p.id,unit:'kg',quantity:'6',unitPrice:'1200000',expiryDate:later(60)});
+ const sale=await addSale(db,{customerId:c.id,lines:[{productId:p.id,unit:'kg',quantity:'8',unitPrice:'1650000'}],paidAmount:'5000000',dueDate:later(15)});
+ return {db,s,c,p,old,lot1,lot2,sale};
+}
+test('returning a partial invoice to stock restores original purchase lots and customer credit atomically',async()=>{
+ const {db,c,p,sale,old,lot1,lot2}=await setup();
+ const before=await readAll(db);assert.equal(before.purchases.find(l=>l.id===old).remainingBase,3000);
+ assert.equal(before.purchases.find(l=>l.id===lot1).remainingBase,0);
+ assert.equal(before.purchases.find(l=>l.id===lot2).remainingBase,2000);
+ const r=await addSaleReturn(db,{saleId:sale.id,lines:[{lineIndex:0,quantity:'5.000'}],restock:true,reason:'کالای سالم، سفارش اضافه'});
+ assert.equal(r.total,8250000);assert.equal(r.replacementCostReversed,7500000);
+ assert.equal(r.acquisitionCostReversed,5200000);
+ assert.equal(r.allocations.reduce((n,a)=>n+a.quantityBase,0),5000);
+ const after=await readAll(db);
+ assert.equal(after.sales[0].total,13200000,'original invoice is immutable');
+ assert.equal(after.products.find(x=>x.id===p.id).stockBase,10000);
+ assert.equal(after.purchases.find(l=>l.id===lot1).remainingBase,4000);
+ assert.equal(after.purchases.find(l=>l.id===lot2).remainingBase,3000);
+ assert.equal(after.purchases.find(l=>l.id===old).remainingBase,3000,'expired lot unaffected');
+ assert.equal(creditedForSale(sale.id,after.returns),8250000);
+ assert.equal(invoiceOutstanding(sale,after.payments,after.returns),0);
+ assert.equal(customerBalance(c.id,after.sales,after.payments,after.returns),-50000,'customer credit, no fictitious cash refund');
+ assert.equal(after.payments.length,1,'no auto money movement');
+ assert.equal(after.movements.filter(m=>m.sourceType==='return').length,1);
+ assert.equal(returnProfitDelta(r,'acquisition'),3050000);
+ assert.deepEqual(validateSnapshot({...after,schemaVersion:3,currency:'IRR'}).returns,1);
+ const encrypted=await encryptBackup(after,'long-password-123');
+ const restored=await decryptBackup(encrypted,'long-password-123');
+ assert.equal(encrypted.formatVersion,3);assert.equal(restored.returns.length,1);
+ await replaceAll(db,restored);
+ assert.deepEqual(await readAll(db),after);
+});
+test('damaged return credits customer without raising stock, repeated return cannot exceed invoice',async()=>{
+ const {db,c,sale,p}=await setup();
+ const damaged=await addSaleReturn(db,{saleId:sale.id,lines:[{lineIndex:0,quantity:'2'}],restock:false,reason:'کالای آسیب‌دیده'});
+ assert.equal(damaged.total,3300000);assert.equal(damaged.replacementCostReversed,0);assert.equal(damaged.acquisitionCostReversed,0);
+ const after=await readAll(db);assert.equal(after.products[0].stockBase,5000);
+ assert.equal(after.movements.filter(x=>x.sourceType==='return').length,0);
+ assert.equal(customerBalance(c.id,after.sales,after.payments,after.returns),4900000);
+ assert.equal(returnProfitDelta(damaged),damaged.total,'non-restocked item cost remains an expense');
+ const second=await addSaleReturn(db,{saleId:sale.id,lines:[{lineIndex:0,quantity:'6'}],restock:true,reason:'باقی مرجوعی'});
+ assert.equal(second.total,9900000);
+ const done=await readAll(db);
+ assert.equal(done.products.find(x=>x.id===p.id).stockBase,11000);
+ assert.equal(creditedForSale(sale.id,done.returns),sale.total);
+ assert.deepEqual(validateSnapshot({...done,schemaVersion:3,currency:'IRR'}).returns,2);
+ const initial=structuredClone(done);
+ await assert.rejects(()=>addSaleReturn(db,{saleId:sale.id,lines:[{lineIndex:0,quantity:'1'}],restock:true,reason:'تکراری'}),/بیشتر از فروش/);
+ assert.deepEqual(await readAll(db),initial,'rejected return does not write partial stock or money changes');
+ await assert.rejects(()=>addPayment(db,{customerId:c.id,saleId:sale.id,amount:'1'}),/مانده/);
+});
+test('credit notes are rejected if invoice reference, allocations or values are tampered with during backup restore',async()=>{
+ const {db,sale}=await setup();await addSaleReturn(db,{saleId:sale.id,lines:[{lineIndex:0,quantity:'3'}],restock:true,reason:'مرجوع'});
+ const data=await readAll(db),snapshot={...data,schemaVersion:3,currency:'IRR'};
+ const badAmount=structuredClone(snapshot);badAmount.returns[0].total++;
+ assert.throws(()=>validateSnapshot(badAmount),/ناسازگار/);
+ await assert.rejects(()=>replaceAll(db,badAmount),/ناسازگار/);
+ const badLots=structuredClone(snapshot);badLots.returns[0].allocations[0].purchaseId='fake';
+ assert.throws(()=>validateSnapshot(badLots),/نامعتبر|ناسازگار/);
+ const badQty=structuredClone(snapshot);badQty.returns[0].lines[0].quantity='9';
+ assert.throws(()=>validateSnapshot(badQty),/بیشتر|ناسازگار/);
+ assert.deepEqual(await readAll(db),data);
+});
+test('old 0.2.1 IRR backups without returns remain restorable as empty return ledger',async()=>{
+ const {db}=await setup();const current=await readAll(db);const {returns,...legacy}=current;
+ const oldSnapshot={...legacy,schemaVersion:2,currency:'IRR'};
+ assert.ok(validateSnapshot(oldSnapshot));assert.deepEqual(normalizeSnapshot(oldSnapshot).returns,[]);
+ const wrapper=await encryptBackup(oldSnapshot,'long-password-123');
+ const unpacked=await decryptBackup(wrapper,'long-password-123');
+ assert.equal(unpacked.schemaVersion,3);assert.deepEqual(unpacked.returns,[]);
+ await replaceAll(db,oldSnapshot);
+ assert.deepEqual(await readAll(db),current);
+});
+test('returns can cover two invoice lines, and an expired purchase lot stays non-sellable after its return',async()=>{
+ const {db,p,c}=await setup();
+ const sale=await addSale(db,{customerId:c.id,lines:[{productId:p.id,unit:'kg',quantity:'1',unitPrice:'1650000'}, {productId:p.id,unit:'kg',quantity:'1',unitPrice:'1750000'}],paidAmount:'0'});
+ const r=await addSaleReturn(db,{saleId:sale.id,lines:[{lineIndex:0,quantity:'0.5'},{lineIndex:1,quantity:'1'}],restock:true,reason:'کالا اشتباه بوده است'});
+ assert.equal(r.total,825000+1750000);
+ assert.equal(r.lines.length,2);assert.equal(r.allocations.reduce((s,a)=>s+a.quantityBase,0),1500);
+ const after=await readAll(db);assert.equal(creditedForSale(sale.id,after.returns),2575000);
+ assert.ok(validateSnapshot({...after,schemaVersion:3,currency:'IRR'}));
+});
+
+test('original encrypted formatVersion 2 snapshot can still be decrypted and restored',async()=>{
+ const {db}=await setup();const data=await readAll(db);const {returns,...legacy}=data;
+ const snapshot={...legacy,schemaVersion:2,currency:'IRR',exportedAt:new Date().toISOString()};
+ const encoder=new TextEncoder(),password='migration-password-123';
+ const salt=crypto.getRandomValues(new Uint8Array(16)),iv=crypto.getRandomValues(new Uint8Array(12));
+ const material=await crypto.subtle.importKey('raw',encoder.encode(password),'PBKDF2',false,['deriveKey']);
+ const key=await crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:250000,hash:'SHA-256'},material,{name:'AES-GCM',length:256},false,['encrypt']);
+ const encrypted=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,encoder.encode(JSON.stringify(snapshot)));
+ const wrapper={format:'warehouse-lite-preview-2026-encrypted',formatVersion:2,createdAt:snapshot.exportedAt,crypto:{kdf:'PBKDF2-SHA256',iterations:250000,algorithm:'AES-256-GCM',salt:Buffer.from(salt).toString('base64'),iv:Buffer.from(iv).toString('base64')},ciphertext:Buffer.from(encrypted).toString('base64')};
+ const extracted=await decryptBackup(wrapper,password);
+ assert.equal(extracted.schemaVersion,3);
+ assert.deepEqual(extracted.returns,[]);
+ await replaceAll(db,extracted);
+ assert.deepEqual(await readAll(db),data);
+});

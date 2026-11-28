@@ -43,7 +43,7 @@ test('requires valid expiration date',()=>{
 });
 test('backup encrypts IRR preview only and rejects corruption and legacy toman snapshot',async()=>{
  const snap=snapshot();assert.ok(validateSnapshot(snap));assert.match(INVOICE_CUSTODY_NOTICE,/تسویه کامل/);
- const b=await encryptBackup(snap,'passphrase-long');assert.equal(b.formatVersion,2);assert.equal(b.format,'warehouse-lite-preview-2026-encrypted');
+ const b=await encryptBackup(snap,'passphrase-long');assert.equal(b.formatVersion,3);assert.equal(b.format,'warehouse-lite-preview-2026-encrypted');
  assert.deepEqual((await decryptBackup(b,'passphrase-long')).products,snap.products);
  await assert.rejects(()=>decryptBackup(b,'bad-password'));await assert.rejects(()=>decryptBackup({...b,ciphertext:b.ciphertext.slice(0,-4)+'AAAA'},'passphrase-long'));
  assert.throws(()=>validateSnapshot({...snap,schemaVersion:1,currency:'IRT'}),/پشتیبان/);

@@ -72,8 +72,8 @@ export function defaultUnitPrice(product,unit,marginBps=DEFAULT_MARGIN_BPS){
 }
 export function stockLabel(p,base=p.stockBase){return `${new Intl.NumberFormat('fa-IR',{maximumFractionDigits:3}).format(p.kind==='gram'?base/1000:base)} ${p.kind==='gram'?'کیلو':'عدد'}`;}
 export function money(value){return `${new Intl.NumberFormat('en-US',{maximumFractionDigits:0}).format(value??0)} ریال`;}
-export function customerBalance(id,sales,payments){return sales.filter(x=>x.customerId===id&&!x.voided).reduce((s,x)=>s+x.total,0)-payments.filter(x=>x.customerId===id).reduce((s,x)=>s+x.amount,0);}
-export function invoiceOutstanding(sale,payments){return Math.max(0,sale.total-payments.filter(x=>x.saleId===sale.id).reduce((a,x)=>a+x.amount,0));}
+export function customerBalance(id,sales,payments,returns=[]){return sales.filter(x=>x.customerId===id&&!x.voided).reduce((s,x)=>s+x.total,0)-payments.filter(x=>x.customerId===id).reduce((s,x)=>s+x.amount,0)-returns.filter(x=>x.customerId===id).reduce((s,x)=>s+x.total,0);}
+export function invoiceOutstanding(sale,payments,returns=[]){return Math.max(0,sale.total-payments.filter(x=>x.saleId===sale.id).reduce((a,x)=>a+x.amount,0)-returns.filter(x=>x.saleId===sale.id).reduce((a,x)=>a+x.total,0));}
 export function inventoryValues(products,purchases){
   return products.reduce((acc,p)=>{
     const lots=purchases.filter(x=>x.productId===p.id && x.remainingBase>0);

@@ -61,3 +61,16 @@
 .creator-inline a{color:#b9eed2}.app-creator{margin:35px 0 0;border-top:1px solid var(--line);padding-top:18px;color:var(--muted);font-size:.78rem;line-height:1.9;text-align:center}
 :root[data-theme=dark] .jalali-open,:root[data-theme=dark] .jalali-dialog{background:var(--card);color:var(--ink)}
 @media(max-width:760px){.app-creator{margin-bottom:12px}.jalali-dialog{padding:16px}.cal-day{min-height:38px}}
+
+
+/* Credit notes and multi-line return controls (0.2.2) */
+.return-dialog{max-width:760px}
+.return-lines{display:flex;flex-direction:column;gap:12px;margin:18px 0}
+.return-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--card)}
+.return-row>div:first-child{flex:1;min-width:0}
+.return-row strong,.return-row small{display:block}
+.return-row small{font-size:.78rem;line-height:2;color:var(--muted)}
+.return-row .field{min-width:170px;max-width:200px}
+.return-dialog form .form-grid{margin-top:16px}
+.invoice-side>small{font-size:.73rem;color:var(--muted);line-height:1.8}
+@media(max-width:600px){.return-row{flex-direction:column;align-items:stretch}.return-row .field{min-width:0;max-width:none}.return-dialog{padding:15px}}

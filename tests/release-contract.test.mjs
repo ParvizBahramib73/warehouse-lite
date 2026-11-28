@@ -23,8 +23,11 @@ test('UI formats monetary inputs with Latin grouping and keeps default zero focu
 });
 test('Creator identity is visible and links to the confirmed personal website',()=>{
  const app=get('src/app.js'),html=get('index.html');
- assert.match(app,/پرویز بهرامی \| Parviz Bahrami/);
+ assert.match(app,/Parviz Bahrami \| پرویز بهرامی/);
  assert.match(app,/https:\/\/parvizbahramib73\.github\.io\/personal-brand-website\//);
+ assert.match(app,/if\(sub==='support'\)return card/);
+ assert.doesNotMatch(app,/<footer class=\"app-creator\"/);
+ assert.doesNotMatch(app,/<div class=\"creator-inline\"/);
  assert.match(app,/rel="noopener noreferrer"/);
  assert.doesNotMatch(html,/نسخه آزمایشی/);
 });

@@ -1,8 +1,8 @@
 const PREFIX = 'warehouse-lite-v02-shell-';
-const CACHE = `${PREFIX}v021-20261128b`;
+const CACHE = `${PREFIX}v022-20261128a`;
 const LEGACY_PREFIX = 'warehouse-lite-shell-v';
 const SCOPE_PATH = new URL(self.registration.scope).pathname;
-const SHELL=['./','./index.html','./app.css','./src/app.js','./src/domain.js','./src/data.js','./src/backup.js','./src/utils.js','./src/jalali.js','./src/rial-input.js','./manifest.webmanifest','./icons/icon-192.png','./icons/icon-512.png'];
+const SHELL=['./','./index.html','./app.css','./src/app.js','./src/domain.js','./src/data.js','./src/backup.js','./src/utils.js','./src/jalali.js','./src/rial-input.js','./src/returns.js','./manifest.webmanifest','./icons/icon-192.png','./icons/icon-512.png'];
 self.addEventListener('install', event => event.waitUntil(
   caches.open(CACHE).then(cache => cache.addAll(SHELL)).then(() => self.skipWaiting())
 ));
