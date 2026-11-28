@@ -1,0 +1,12 @@
+{
+  "name": "warehouse-lite",
+  "version": "0.2.0-preview",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "build": "node scripts/build.mjs",
+    "serve": "python3 -m http.server 8765"
+  },
+  "description": "Offline-first Persian PWA prototype for a single-device confectionery distributor in Hamadan"
+}
