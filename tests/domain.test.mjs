@@ -1,108 +1,58 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {normalizeDigits,asDecimalMilli,asInteger,parseBaseQuantity,lineTotal,validateSaleLines,customerBalance,money} from '../src/domain.js';
+import {normalizeDigits,asDecimalMilli,asInteger,parseBaseQuantity,lineTotal,validateSaleLines,customerBalance,calcSuggestedPrice,defaultUnitPrice,inventoryValues,valueForQuantity,invoiceOutstanding,INVOICE_CUSTODY_NOTICE,validDate} from '../src/domain.js';
 import {encryptBackup,decryptBackup,validateSnapshot} from '../src/backup.js';
 
-const kg={id:'p1',name:'بادکا',kind:'gram',packBase:5000,stockBase:15000,lowBase:2000,salePrice:120000};
-const pcs={id:'p2',name:'خامه',kind:'piece',packBase:12,stockBase:20,lowBase:2,salePrice:40000};
-const snap={schemaVersion:1,products:[{...kg}],customers:[{id:'c1',name:'مشتری'}],suppliers:[{id:'s1',name:'تأمین‌کننده'}],purchases:[],sales:[],payments:[],movements:[{id:'m1',productId:'p1',deltaBase:15000}]};
-
-test('normalizes Persian and Arabic numeral input',()=>{
- assert.equal(normalizeDigits('۱٬۲۳۴٫۵'),'1234.5');assert.equal(normalizeDigits('١٢٣'),'123');
- assert.equal(asDecimalMilli('۲٫۵'),2500);
+const oil={id:'p1',name:'روغن قنادی',kind:'gram',packBase:5000,unitConfigs:{pack:5000,carton:20000,can:16000},stockBase:15000,lowBase:2000,lastBuyPrice:1000000,replacementPrice:1500000,salePrice:1650000};
+const carton={id:'p2',name:'کارتن نمونه',kind:'piece',packBase:12,unitConfigs:{pack:12,carton:144},stockBase:20,lowBase:2,lastBuyPrice:50000,replacementPrice:70000,salePrice:77000};
+function snapshot(){return {schemaVersion:2,currency:'IRR',products:[{...oil}],customers:[{id:'c1',name:'قنادی نمونه'}],suppliers:[{id:'s1',name:'تأمین‌کننده نمونه'}],purchases:[{id:'b1',productId:'p1',supplierId:'s1',unit:'kg',quantity:'15',quantityBase:15000,remainingBase:15000,unitPrice:1000000,total:15000000}],sales:[],payments:[],movements:[{id:'m1',productId:'p1',deltaBase:15000}],cheques:[],settings:[],priceHistory:[]};}
+test('normalizes Persian numbers and rejects negative/unsafe rial amounts',()=>{
+ assert.equal(normalizeDigits('۱٬۲۳۴٫۵'),'1234.5');assert.equal(normalizeDigits('١٢٣'),'123');assert.equal(asDecimalMilli('۲٫۵'),2500);
+ assert.throws(()=>asInteger('-10'));assert.throws(()=>asInteger('9007199254740992'));
 });
-test('uses exact integer base units for kilogram/pack/pieces',()=>{
- assert.deepEqual(parseBaseQuantity(kg,'kg','۱٫۲۵'),{base:1250,thousandths:1250});
- assert.deepEqual(parseBaseQuantity(kg,'pack','۲'),{base:10000,thousandths:2000});
- assert.deepEqual(parseBaseQuantity(pcs,'pack','۱'),{base:12,thousandths:1000});
- assert.throws(()=>parseBaseQuantity(pcs,'piece','1.2'));
- assert.throws(()=>parseBaseQuantity(kg,'kg','1.0009'));
+test('supports kilogram, piece, pack, carton and can with base inventory precision',()=>{
+ assert.deepEqual(parseBaseQuantity(oil,'kg','۱٫۲۵'),{base:1250,thousandths:1250});
+ assert.deepEqual(parseBaseQuantity(oil,'pack','۲'),{base:10000,thousandths:2000});
+ assert.deepEqual(parseBaseQuantity(oil,'can','۱'),{base:16000,thousandths:1000});
+ assert.deepEqual(parseBaseQuantity(carton,'carton','۲'),{base:288,thousandths:2000});
+ assert.throws(()=>parseBaseQuantity(carton,'piece','1.2'));
 });
-test('rounds per line in whole toman, no floating currency',()=>{
- assert.equal(lineTotal(100000,1250),125000);
- assert.equal(lineTotal(101,500),51);
- assert.throws(()=>asInteger('-10'));
+test('uses replacement cost and 10 percent recommended markup with exact rial math',()=>{
+ assert.equal(calcSuggestedPrice(1500000),1650000);
+ assert.equal(defaultUnitPrice(oil,'kg'),1650000);
+ assert.equal(defaultUnitPrice(oil,'pack'),8250000);
+ assert.equal(defaultUnitPrice(oil,'carton'),33000000);
+ assert.equal(lineTotal(1650000,2500),4125000);
+ assert.equal(valueForQuantity(oil,1500000,2500),3750000);
+ const result=validateSaleLines([{productId:'p1',unit:'kg',quantity:'2.5',unitPrice:'1650000'}],[oil]);
+ assert.equal(result.total,4125000);assert.equal(result.replacementCost,3750000);assert.equal(result.replacementProfit,375000);
+ const values=inventoryValues([oil],snapshot().purchases);
+ assert.deepEqual(values,{purchase:15000000,replacement:22500000,sale:24750000});
 });
-test('rejects overselling stock across duplicate lines',()=>{
- assert.throws(()=>validateSaleLines([{productId:'p1',unit:'kg',quantity:'10',unitPrice:'300'},{productId:'p1',unit:'kg',quantity:'6',unitPrice:'300'}],[kg]),/کافی نیست/);
- const x=validateSaleLines([{productId:'p1',unit:'kg',quantity:'2.5',unitPrice:'130000'},{productId:'p2',unit:'piece',quantity:'2',unitPrice:'45000'}],[kg,pcs]);
- assert.equal(x.total,415000);assert.equal(x.required.get('p1'),2500);
+test('rejects overselling across duplicate items',()=>{
+ assert.throws(()=>validateSaleLines([{productId:'p1',unit:'kg',quantity:'10',unitPrice:'2000000'},{productId:'p1',unit:'kg',quantity:'6',unitPrice:'2000000'}],[oil]),/کافی نیست/);
 });
-test('customer balance tracks sales minus settled payments',()=>{
- const s=[{customerId:'c1',total:100000},{customerId:'c1',total:50000}];
- const p=[{customerId:'c1',amount:110000}];
- assert.equal(customerBalance('c1',s,p),40000);
+test('calculates debts and linked invoice amount separately',()=>{
+ const sales=[{id:'s1',customerId:'c1',total:100000},{id:'s2',customerId:'c1',total:50000}];
+ const payments=[{customerId:'c1',saleId:'s1',amount:70000},{customerId:'c1',saleId:null,amount:40000}];
+ assert.equal(customerBalance('c1',sales,payments),40000);
+ assert.equal(invoiceOutstanding(sales[0],payments),30000);
 });
-test('encrypt/decrypt roundtrip and rejects wrong password and tampering',async()=>{
- assert.ok(validateSnapshot(snap));
- assert.equal(validateSnapshot(snap).visits,0);
- const wrapper=await encryptBackup(snap,'passphrase-long');
- assert.equal(wrapper.format,'warehouse-lite-encrypted');
- const restored=await decryptBackup(wrapper,'passphrase-long');
- assert.deepEqual(restored.products,snap.products);
- assert.equal(restored.schemaVersion,2);
- assert.deepEqual(restored.visits,[]);
- await assert.rejects(()=>decryptBackup(wrapper,'bad-password'));
- const modified={...wrapper,ciphertext:wrapper.ciphertext.slice(0,-4)+'AAAA'};
- await assert.rejects(()=>decryptBackup(modified,'passphrase-long'));
+test('requires valid expiration date',()=>{
+ assert.equal(validDate('2027-01-31'),'2027-01-31');assert.throws(()=>validDate('2027-02-31'));
 });
-test('backup validation rejects inconsistent stock',()=>{
- assert.throws(()=>validateSnapshot({...snap,products:[{...kg,stockBase:12000}]}),/مطابقت ندارند/);
+test('backup encrypts IRR preview only and rejects corruption and legacy toman snapshot',async()=>{
+ const snap=snapshot();assert.ok(validateSnapshot(snap));assert.match(INVOICE_CUSTODY_NOTICE,/تسویه کامل/);
+ const b=await encryptBackup(snap,'passphrase-long');assert.equal(b.formatVersion,2);assert.equal(b.format,'warehouse-lite-preview-2026-encrypted');
+ assert.deepEqual((await decryptBackup(b,'passphrase-long')).products,snap.products);
+ await assert.rejects(()=>decryptBackup(b,'bad-password'));await assert.rejects(()=>decryptBackup({...b,ciphertext:b.ciphertext.slice(0,-4)+'AAAA'},'passphrase-long'));
+ assert.throws(()=>validateSnapshot({...snap,schemaVersion:1,currency:'IRT'}),/پشتیبان/);
 });
-
-test('customer balance ignores voided invoices and voided receipts',()=>{
- const sales=[
-  {customerId:'c1',total:100000,status:'active'},
-  {customerId:'c1',total:50000,status:'void'},
-  {customerId:'c1',total:20000}
- ];
- const payments=[
-  {customerId:'c1',amount:30000,status:'active'},
-  {customerId:'c1',amount:10000,status:'void'},
-  {customerId:'c1',amount:5000}
- ];
- assert.equal(customerBalance('c1',sales,payments),85000);
-});
-
-test('backup stock reconciliation accepts edit and void reversal movements',()=>{
- const product={id:'p1',name:'بادکا',kind:'gram',packBase:0,stockBase:0,lowBase:0,salePrice:100};
- const snapshot={
-  schemaVersion:1,products:[product],suppliers:[{id:'s1',name:'تأمین‌کننده'}],customers:[{id:'c1',name:'مشتری'}],
-  purchases:[{id:'buy1',productId:'p1',supplierId:'s1',total:1000,status:'void'}],
-  sales:[{id:'sale1',customerId:'c1',lines:[{productId:'p1',amount:400}],total:400,status:'void'}],
-  payments:[],
-  movements:[
-   {id:'m1',productId:'p1',deltaBase:10000},
-   {id:'m2',productId:'p1',deltaBase:-3000},
-   {id:'m3',productId:'p1',deltaBase:3000},
-   {id:'m4',productId:'p1',deltaBase:-4000},
-   {id:'m5',productId:'p1',deltaBase:4000},
-   {id:'m6',productId:'p1',deltaBase:2000},
-   {id:'m7',productId:'p1',deltaBase:-12000}
-  ]
- };
- assert.ok(validateSnapshot(snapshot));
-});
-
-test('displayed Toman amounts use Persian three-digit grouping',()=>{
- assert.equal(money(3000000),'۳٬۰۰۰٬۰۰۰ تومان');
- assert.equal(money(125000),'۱۲۵٬۰۰۰ تومان');
-});
-
-test('version 2 backup validates visit history and keeps legacy version 1 compatible',()=>{
- const legacy={...snap,schemaVersion:1};
- assert.equal(validateSnapshot(legacy).visits,0);
- const upgraded={...snap,schemaVersion:2,visits:[{id:'v1',customerId:'c1',plannedDate:'2026-11-23',outcome:'purchased',note:'خرید ثبت شد',nextFollowUpDate:''}]};
- assert.equal(validateSnapshot(upgraded).visits,1);
- assert.throws(()=>validateSnapshot({...upgraded,visits:[{...upgraded.visits[0],customerId:'missing'}]}),/مراجعه نامعتبر/);
-});
-
-test('encrypted v2 backup accepts detailed visit outcomes and route metadata',()=>{
- const visitSnapshot={...snap,schemaVersion:2,visits:[
-  {id:'v1',customerId:'c1',plannedDate:'2026-11-23',outcome:'small_purchase',routeName:'مسیر کبودرآهنگ',routeOrder:1,visitedAt:'2026-11-23T08:00:00.000Z',note:'نیم کارتن روغن'},
-  {id:'v2',customerId:'c1',plannedDate:'2026-11-24',outcome:'rescheduled',routeName:'مسیر مهدیه',routeOrder:1,nextFollowUpDate:'2026-11-26',note:'مراجعه مجدد'}
- ]};
- assert.equal(validateSnapshot(visitSnapshot).visits,2);
- assert.throws(()=>validateSnapshot({...visitSnapshot,visits:[{...visitSnapshot.visits[0],routeOrder:0}]}),/ترتیب مسیر/);
- assert.throws(()=>validateSnapshot({...visitSnapshot,visits:[{...visitSnapshot.visits[0],customerId:'missing'}]}),/سابقه مراجعه/);
+test('validates lot stock and recorded financial relationships before restore',()=>{
+ const snap=snapshot();
+ assert.throws(()=>validateSnapshot({...snap,products:[{...oil,stockBase:12000}]}),/مطابقت ندارد/);
+ assert.throws(()=>validateSnapshot({...snap,purchases:[{...snap.purchases[0],remainingBase:20000}]}),/خرید/);
+ const badSale={id:'sale1',customerId:'c1',total:2000,replacementCost:500,replacementProfit:1500,acquisitionCost:300,acquisitionProfit:1700,allocations:[{purchaseId:'b1',productId:'p1',quantityBase:1000,acquisitionCost:300}],lines:[{productId:'p1',unit:'kg',quantity:'1',unitPrice:1200,amount:1200,replacementCost:500,quantityBase:1000}]};
+ assert.throws(()=>validateSnapshot({...snap,sales:[badSale]}),/مبلغ|جمع فاکتور/);
+ assert.throws(()=>validateSnapshot({...snap,cheques:[{id:'cheque1',supplierId:'missing',number:'100',amount:2000,status:'pending'}]}),/چک/);
 });

@@ -1,56 +1,35 @@
-# Warehouse Lite | انبار من
+# انبار من | Anbar Man — 0.2.1
 
-Responsive, offline-first Persian PWA prototype for Ali's confectionery-supplies distribution business in Hamadan, Iran.
+Offline-first Persian warehouse / purchasing / invoicing application (PWA).
 
-Designed and developed by [Parviz Bahrami](https://parvizbahramib73.github.io/personal-brand-website).
+**Developed by [Parviz Bahrami | پرویز بهرامی](https://parvizbahramib73.github.io/personal-brand-website/)**.
 
-> **Prototype 0.1.8 — not approved for real accounting yet.** Use synthetic data only until Android device, backup/restore, financial edge-case, and security tests are completed.
+## Live application
 
-## Quick links
+https://parvizbahramib73.github.io/warehouse-lite/
 
-- [راهنمای کامل فارسی](README_FA.md)
-- [راهنمای انتشار GitHub Pages](DEPLOY_GITHUB_PAGES_FA.md)
-- [Product brief](PROJECT_BRIEF_FA.md)
-- [Pilot checklist](PILOT_CHECKLIST_FA.md)
-- [Test report](TEST_REPORT.md)
-- [Architecture decision](ADR-001.md)
+The previous 0.1.8 program has been replaced on the main URL **at the user's request**, because the owner confirmed there is **no real business data** in the older installation. The previous code remains recoverable from commit `ad1fe0522fb6e85d28ea052de8b274a89b4507d8`. The v0.2 preview remains available independently at `/preview/v0.2/`.
 
-## Architecture
+## Features
 
-- Static PWA; no server or paid database in the first pilot.
-- IndexedDB stores operational records locally on one primary device.
-- Manual encrypted backup/export and restore/import.
-- Branded AliFactor invoice preview/print and PNG sharing through the Android system share sheet.
-- Live Persian three-digit grouping in Toman input fields with cursor preservation.
-- Customer search, chronological account statements with running balances, and dashboard follow-up suggestions.
-- Daily visit planner: weekly customers are preloaded and any other active customer can be manually added to a dated route.
-- Named routes, grouped stops, visit order, remove-from-today without deleting history, and last-visit context.
-- Visit outcomes include full purchase, small/partial purchase, no purchase, unavailable, follow-up, rescheduled, no current need, declined and custom note-required outcomes.
-- Follow-up/reschedule dates automatically bring customers into the matching day's route; daily visit summaries show completed, full/partial purchases, no-sale, follow-up and pending counts.
-- Invoice handoff from customers marked as full/partial purchase; a visit result itself never creates an accounting entry.
-- Estimated gross-profit reporting using weighted-average purchase cost; new invoices keep cost snapshots, while older invoices are reconstructed where purchase history allows.
-- Search and 25-row pagination for product, purchase, supplier, sales, customer, visit and profit lists; IndexedDB v2 adds visit storage and lookup indexes. Legacy v1 encrypted backups remain importable.
-- Faster invoice entry with preserved draft state and focus progression; full-width desktop shell with right-edge sidebar.
-- GitHub stores source code and runs tests; it is **not** the operational database or backup store.
-- Current pagination limits rendered rows, but the app still loads IndexedDB collections into browser memory at startup. Very large datasets need cursor-based database paging and a server/API phase.
-- Project Pages paths are relative so the app can be hosted at `/warehouse-lite/`.
+- Solar Hijri (Jalali/Iranian) calendar for purchase lots, invoice settlement and cheque dates; ISO dates stored internally for sorting and comparisons
+- English numerals and 3-digit comma grouping in all monetary display/entry fields, integer **IRR/rial** storage
+- User-edited replacement cost, suggested sales price (10% default markup), three inventory valuations, profit snapshots
+- Purchase lots with expiry warnings, stock quantities, multiunit products, image details
+- A5/A4 invoices, image sharing, fixed custody clause and settlement date
+- Supplier cheques, customer payments, overdue invoices, direct dial links, search suggestions
+- Submenus, themes, preferences, encrypted backup/export and validated replacement restore
+- Bulk stock import from CSV/pasted rows with review before commit (not AI OCR)
 
-## Local development
+## Upgrading and storage
 
-Requires Node.js 22 and Python 3 (for local static serving). No third-party npm dependencies are required.
+- New root v0.2.1 uses IndexedDB name `warehouse-lite-v02-irr`, **not** the legacy v0.1.8 Toman database (`warehouse-lite-v01`) nor the `/preview/v0.2/` database (`warehouse-lite-feedback-preview-v02`). These databases are on the same origin but are deliberately separated. No legacy Toman -> Rial migration runs.
+- The web manifest keeps the root app identity `./` for installed-PWA continuity; the service worker removes only its own old version cache and the legacy root shell cache, not the preview's caches.
+- Old 0.1.8 backups are not importable into v0.2.1. v0.2 IRR backup format can be restored with validation and explicit user confirmation; however a live second-device restore test remains **NOT RUN**.
+- Data lives on **one device/browser** with no backend/synchronization. Export encrypted backups regularly and keep copies off the device.
 
-```bash
-npm test
-npm run build
-npm run serve
-```
+## Verification and limitations
 
-Open `http://localhost:8765/` in a modern browser.
+Run `npm test` (Node.js 22) and `npm run build` for the static bundle. Real Android, full browser E2E, second-device restore, inventory refunds/voids and accountant acceptance are **NOT VERIFIED**. Removal of the preview label is branding, not a claim of accounting certification. The former v0.1.8 visit-route management screen is not present in this v0.2.1 generation; it can be recovered from git history. Validate financial workflows with synthetic data before entering production records.
 
-## Data safety
-
-Never commit customer, supplier, invoice, payment, or `.wlbackup` files. No real business data belongs in this public repository. No reuse license is granted by this repository unless a LICENSE file is added later.
-
-## Deployment
-
-GitHub Pages is configured to deploy from the `GitHub Actions` workflow after the repository Pages source is enabled. The deployment workflow runs the quality checks and builds `dist/` before publishing.
+No real customer, invoice, supplier or business information is committed to this repository.

@@ -26,6 +26,8 @@ jobs:
           node --check src/backup.js
           node --check src/app.js
           node --check src/utils.js
+          node --check src/jalali.js
+          node --check src/rial-input.js
           node --check sw.js
           node --check scripts/build.mjs
       - name: Build static PWA
