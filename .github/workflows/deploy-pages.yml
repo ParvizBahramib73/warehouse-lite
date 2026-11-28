@@ -37,6 +37,17 @@ jobs:
           node --check scripts/build.mjs
       - name: Build static PWA
         run: npm run build
+      - name: Add isolated v0.2 preview to Pages artifact
+        run: |
+          echo "3ae36e472e18a0512471c545900774e809c2cbe0814cec92c1c431afff905169  preview/v0.2/site.tar.xz" | sha256sum --check
+          mkdir -p dist/preview/v0.2
+          tar -xJf preview/v0.2/site.tar.xz -C dist/preview/v0.2
+          cp -R dist/icons dist/preview/v0.2/icons
+          test -f dist/preview/v0.2/index.html
+          test -f dist/preview/v0.2/src/app.js
+          test -f dist/preview/v0.2/icons/icon-192.png
+          grep -q "warehouse-lite-feedback-preview-v02" dist/preview/v0.2/src/data.js
+          for file in dist/preview/v0.2/src/*.js dist/preview/v0.2/sw.js; do node --check "$file"; done
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
         with:
